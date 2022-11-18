@@ -44,7 +44,9 @@ bool write_db_data(vector<KeyOpFieldsValuesTuple> &db_items)
     DBConnector db("APPL_DB", 0, false);
     RedisPipeline pipeline(&db); // dtor of RedisPipeline will automatically flush data
     unordered_map<string, ProducerStateTable> table_map;
-    
+    // write log to syslog so we know test start
+    SWSS_LOG_ERROR("[PERF_TEST] swssconfig write data to APPL_DB.");
+
     for (auto &db_item : db_items)
     {
         dump_db_item(db_item);
