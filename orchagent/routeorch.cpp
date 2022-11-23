@@ -204,6 +204,7 @@ void RouteOrch::addLinkLocalRouteToMe(sai_object_id_t vrf_id, IpPrefix linklocal
     attrs.push_back(attr);
 
     sai_status_t status = sai_route_api->create_route_entry(&unicast_route_entry, (uint32_t)attrs.size(), attrs.data());
+    SWSS_LOG_ERROR("[PERF_TEST] addLinkLocalRouteToMe SAI create route entry");
     if (status != SAI_STATUS_SUCCESS)
     {
         SWSS_LOG_ERROR("Failed to create link local ipv6 route %s to cpu, rv:%d",
@@ -227,6 +228,7 @@ void RouteOrch::delLinkLocalRouteToMe(sai_object_id_t vrf_id, IpPrefix linklocal
     subnet(unicast_route_entry.destination, unicast_route_entry.destination);
 
     sai_status_t status = sai_route_api->remove_route_entry(&unicast_route_entry);
+    SWSS_LOG_ERROR("[PERF_TEST] delLinkLocalRouteToMe SAI remove route entry");
     if (status != SAI_STATUS_SUCCESS)
     {
         SWSS_LOG_ERROR("Failed to delete link local ipv6 route %s to cpu, rv:%d",
@@ -887,7 +889,9 @@ void RouteOrch::doTask(Consumer& consumer)
         }
 
         // Flush the route bulker, so routes will be written to syncd and ASIC
+        SWSS_LOG_ERROR("[PERF_TEST] Start Flush the route bulker, so routes will be written to syncd and ASIC");
         gRouteBulker.flush();
+        SWSS_LOG_ERROR("[PERF_TEST] End Flush the route bulker, so routes will be written to syncd and ASIC");
 
         // Go through the bulker results
         auto it_prev = consumer.m_toSync.begin();
@@ -1576,6 +1580,7 @@ bool RouteOrch::updateNextHopRoutes(const NextHopKey& nextHop, uint32_t& numRout
         ++numRoutes;
         ++rt;
     }
+    SWSS_LOG_ERROR("[PERF_TEST] updateNextHopRoutes SAI set_route_entry_attribute");
 
     return true;
 }
