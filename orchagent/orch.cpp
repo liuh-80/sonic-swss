@@ -12,6 +12,8 @@
 #include "tokenize.h"
 #include "logger.h"
 #include "consumerstatetable.h"
+#include "zmqserver.h"
+#include "zmqconsumerstatetable.h"
 #include "sai_serialize.h"
 
 using namespace swss;
@@ -52,6 +54,19 @@ Orch::Orch(const vector<TableConnector>& tables)
     }
 }
 
+Orch::Orch(DBConnector *db, ZmqServer &zmqServer, const string tableName, int pri)
+{
+    addConsumer(db, zmqServer, tableName, pri);
+}
+
+Orch::Orch(DBConnector *db, ZmqServer &zmqServer, const vector<string> &tableNames)
+{
+    for (auto it : tableNames)
+    {
+        addConsumer(db, zmqServer, it, default_orch_pri);
+    }
+}
+
 Orch::~Orch()
 {
     if (gRecordOfs.is_open())
@@ -70,7 +85,7 @@ vector<Selectable *> Orch::getSelectables()
     return selectables;
 }
 
-void Consumer::addToSync(const KeyOpFieldsValuesTuple &entry)
+void ConsumerBase::addToSync(const KeyOpFieldsValuesTuple &entry)
 {
     SWSS_LOG_ENTER();
 
@@ -157,7 +172,7 @@ void Consumer::addToSync(const KeyOpFieldsValuesTuple &entry)
 
 }
 
-size_t Consumer::addToSync(const std::deque<KeyOpFieldsValuesTuple> &entries)
+size_t ConsumerBase::addToSync(const std::deque<KeyOpFieldsValuesTuple> &entries)
 {
     SWSS_LOG_ENTER();
 
@@ -170,7 +185,7 @@ size_t Consumer::addToSync(const std::deque<KeyOpFieldsValuesTuple> &entries)
 }
 
 // TODO: Table should be const
-size_t Consumer::refillToSync(Table* table)
+size_t ConsumerBase::refillToSync(Table* table)
 {
     std::deque<KeyOpFieldsValuesTuple> entries;
     vector<string> keys;
@@ -192,11 +207,9 @@ size_t Consumer::refillToSync(Table* table)
     return addToSync(entries);
 }
 
-size_t Consumer::refillToSync()
+size_t ConsumerBase::refillToSync()
 {
-    ConsumerTableBase *consumerTable = getConsumerTable();
-
-    auto subTable = dynamic_cast<SubscriberStateTable *>(consumerTable);
+    auto subTable = dynamic_cast<SubscriberStateTable *>(getSelectable());
     if (subTable != NULL)
     {
         size_t update_size = 0;
@@ -213,11 +226,41 @@ size_t Consumer::refillToSync()
     else
     {
         // consumerTable is either ConsumerStateTable or ConsumerTable
-        auto db = consumerTable->getDbConnector();
-        string tableName = consumerTable->getTableName();
+        auto db = getDbConnector();
+        string tableName = getTableName();
         auto table = Table(db, tableName);
         return refillToSync(&table);
     }
+}
+
+string ConsumerBase::dumpTuple(const KeyOpFieldsValuesTuple &tuple)
+{
+    string s = getTableName() + getTableNameSeparator() + kfvKey(tuple)
+               + "|" + kfvOp(tuple);
+    for (auto i = kfvFieldsValues(tuple).begin(); i != kfvFieldsValues(tuple).end(); i++)
+    {
+        s += "|" + fvField(*i) + ":" + fvValue(*i);
+    }
+
+    return s;
+}
+
+void ConsumerBase::dumpPendingTasks(vector<string> &ts)
+{
+    for (auto &tm : m_toSync)
+    {
+        KeyOpFieldsValuesTuple& tuple = tm.second;
+
+        string s = dumpTuple(tuple);
+
+        ts.push_back(s);
+    }
+}
+
+void ConsumerBase::drain()
+{
+    if (!m_toSync.empty())
+        m_orch->doTask(*this);
 }
 
 void Consumer::execute()
@@ -235,39 +278,24 @@ void Consumer::execute()
     drain();
 }
 
-void Consumer::drain()
+void ZmqConsumer::execute()
 {
-    if (!m_toSync.empty())
-        m_orch->doTask(*this);
-}
+    SWSS_LOG_ENTER();
 
-string Consumer::dumpTuple(const KeyOpFieldsValuesTuple &tuple)
-{
-    string s = getTableName() + getConsumerTable()->getTableNameSeparator() + kfvKey(tuple)
-               + "|" + kfvOp(tuple);
-    for (auto i = kfvFieldsValues(tuple).begin(); i != kfvFieldsValues(tuple).end(); i++)
+    size_t update_size = 0;
+    do
     {
-        s += "|" + fvField(*i) + ":" + fvValue(*i);
-    }
+        std::deque<KeyOpFieldsValuesTuple> entries;
+        getConsumerTable()->pops(entries);
+        update_size = addToSync(entries);
+    } while (update_size != 0);
 
-    return s;
-}
-
-void Consumer::dumpPendingTasks(vector<string> &ts)
-{
-    for (auto &tm : m_toSync)
-    {
-        KeyOpFieldsValuesTuple& tuple = tm.second;
-
-        string s = dumpTuple(tuple);
-
-        ts.push_back(s);
-    }
+    drain();
 }
 
 size_t Orch::addExistingData(const string& tableName)
 {
-    auto consumer = dynamic_cast<Consumer *>(getExecutor(tableName));
+    auto consumer = dynamic_cast<ConsumerBase *>(getExecutor(tableName));
     if (consumer == NULL)
     {
         SWSS_LOG_ERROR("No consumer %s in Orch", tableName.c_str());
@@ -281,7 +309,7 @@ size_t Orch::addExistingData(const string& tableName)
 size_t Orch::addExistingData(Table *table)
 {
     string tableName = table->getTableName();
-    Consumer* consumer = dynamic_cast<Consumer *>(getExecutor(tableName));
+    ConsumerBase* consumer = dynamic_cast<ConsumerBase *>(getExecutor(tableName));
     if (consumer == NULL)
     {
         SWSS_LOG_ERROR("No consumer %s in Orch", tableName.c_str());
@@ -299,7 +327,7 @@ bool Orch::bake()
     {
         string executorName = it.first;
         auto executor = it.second;
-        auto consumer = dynamic_cast<Consumer *>(executor.get());
+        auto consumer = dynamic_cast<ConsumerBase *>(executor.get());
         if (consumer == NULL)
         {
             continue;
@@ -581,7 +609,7 @@ void Orch::logfileReopen()
     }
 }
 
-void Orch::recordTuple(Consumer &consumer, const KeyOpFieldsValuesTuple &tuple)
+void Orch::recordTuple(ConsumerBase &consumer, const KeyOpFieldsValuesTuple &tuple)
 {
     string s = consumer.dumpTuple(tuple);
 
@@ -829,6 +857,30 @@ void Orch::addConsumer(DBConnector *db, string tableName, int pri)
     else
     {
         addExecutor(new Consumer(new ConsumerStateTable(db, tableName, gBatchSize, pri), this, tableName));
+    }
+}
+
+void Orch::addConsumer(DBConnector *db, ZmqServer &zmqServer, string tableName, int pri)
+{
+    if (db->getDbId() == APPL_DB
+        && (tableName == APP_DASH_VNET_TABLE_NAME
+            || tableName == APP_DASH_VNET_MAPPING_TABLE_NAME
+            || tableName == APP_DASH_APPLIANCE_TABLE_NAME
+            || tableName == APP_DASH_ROUTING_TYPE_TABLE_NAME
+            || tableName == APP_DASH_ENI_TABLE_NAME
+            || tableName == APP_DASH_QOS_TABLE_NAME
+            || tableName == APP_DASH_ROUTE_TABLE_NAME
+            || tableName == APP_DASH_ROUTE_RULE_TABLE_NAME
+            || tableName == APP_DASH_ACL_IN_TABLE_NAME
+            || tableName == APP_DASH_ACL_OUT_TABLE_NAME
+            || tableName == APP_DASH_ACL_OUT_TABLE_NAME
+            || tableName == APP_DASH_ACL_RULE_TABLE_NAME))
+    {
+        addExecutor(new ZmqConsumer(new ZmqConsumerStateTable(db, tableName, zmqServer, gBatchSize, pri), this, tableName));
+    }
+    else
+    {
+        SWSS_LOG_THROW("ZmqConsumer not enabled for consumer table: %s", tableName.c_str());
     }
 }
 

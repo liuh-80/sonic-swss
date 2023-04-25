@@ -17,6 +17,7 @@ extern "C" {
 #include "table.h"
 #include "consumertable.h"
 #include "consumerstatetable.h"
+#include "zmqconsumerstatetable.h"
 #include "notificationconsumer.h"
 #include "selectabletimer.h"
 #include "macaddress.h"
@@ -132,40 +133,36 @@ protected:
     swss::Selectable *getSelectable() const { return m_selectable; }
 };
 
-class Consumer : public Executor {
+class ConsumerBase : public Executor {
 public:
-    Consumer(swss::ConsumerTableBase *select, Orch *orch, const std::string &name)
-        : Executor(select, orch, name)
+    ConsumerBase(swss::Selectable *selectable, Orch *orch, const std::string &name)
+        : Executor(selectable, orch, name)
     {
-    }
-
-    swss::ConsumerTableBase *getConsumerTable() const
-    {
-        return static_cast<swss::ConsumerTableBase *>(getSelectable());
-    }
-
-    std::string getTableName() const
-    {
-        return getConsumerTable()->getTableName();
     }
 
     int getDbId() const
     {
-        return getConsumerTable()->getDbConnector()->getDbId();
+        return getDbConnector()->getDbId();
     }
 
     std::string getDbName() const
     {
-        return getConsumerTable()->getDbConnector()->getDbName();
+        return getDbConnector()->getDbName();
     }
+
+    virtual std::string getTableName() const = 0;
+
+    virtual std::string getTableNameSeparator() const = 0;
+
+    virtual const swss::DBConnector* getDbConnector() const = 0;
 
     std::string dumpTuple(const swss::KeyOpFieldsValuesTuple &tuple);
     void dumpPendingTasks(std::vector<std::string> &ts);
 
     size_t refillToSync();
     size_t refillToSync(swss::Table* table);
-    void execute();
-    void drain();
+    void execute() {};
+    void drain() override;
 
     /* Store the latest 'golden' status */
     // TODO: hide?
@@ -175,6 +172,66 @@ public:
 
     // Returns: the number of entries added to m_toSync
     size_t addToSync(const std::deque<swss::KeyOpFieldsValuesTuple> &entries);
+};
+
+class Consumer : public ConsumerBase {
+public:
+    Consumer(swss::ConsumerTableBase *select, Orch *orch, const std::string &name)
+        : ConsumerBase(select, orch, name)
+    {
+    }
+
+    swss::ConsumerTableBase *getConsumerTable() const
+    {
+        return static_cast<swss::ConsumerTableBase *>(getSelectable());
+    }
+
+    std::string getTableName() const override
+    {
+        return getConsumerTable()->getTableName();
+    }
+
+    std::string getTableNameSeparator() const override
+    {
+        return getConsumerTable()->getTableNameSeparator();
+    }
+
+    const swss::DBConnector* getDbConnector() const override
+    {
+        return getConsumerTable()->getDbConnector();
+    }
+
+    void execute() override;
+};
+
+class ZmqConsumer : public ConsumerBase {
+public:
+    Consumer(swss::ZmqConsumerStateTable *select, Orch *orch, const std::string &name)
+        : ConsumerBase(select, orch, name)
+    {
+    }
+
+    swss::ZmqConsumerStateTable *getConsumerTable() const
+    {
+        return static_cast<swss::ZmqConsumerStateTable *>(getSelectable());
+    }
+
+    std::string getTableName() const override
+    {
+        return getConsumerTable()->getTableName();
+    }
+
+    std::string getTableNameSeparator() const override
+    {
+        return getConsumerTable()->getTableNameSeparator();
+    }
+
+    const swss::DBConnector* getDbConnector() const override
+    {
+        return getConsumerTable()->getDbConnector();
+    }
+
+    void execute() override;
 };
 
 typedef std::map<std::string, std::shared_ptr<Executor>> ConsumerMap;
@@ -199,6 +256,8 @@ public:
     Orch(swss::DBConnector *db, const std::vector<std::string> &tableNames);
     Orch(swss::DBConnector *db, const std::vector<table_name_with_pri_t> &tableNameWithPri);
     Orch(const std::vector<TableConnector>& tables);
+    Orch(swss::DBConnector *db, ZmqServer &zmqServer, const std::string tableName, int pri = default_orch_pri);
+    Orch(swss::DBConnector *db, ZmqServer &zmqServer, const std::vector<std::string> &tableNames);
     virtual ~Orch();
 
     std::vector<swss::Selectable*> getSelectables();
@@ -215,12 +274,13 @@ public:
     virtual void doTask();
 
     /* Run doTask against a specific executor */
-    virtual void doTask(Consumer &consumer) = 0;
+    virtual void doTask(Consumer &consumer) { };
+    virtual void doTask(ConsumerBase &consumer) { };
     virtual void doTask(swss::NotificationConsumer &consumer) { }
     virtual void doTask(swss::SelectableTimer &timer) { }
 
     /* TODO: refactor recording */
-    static void recordTuple(Consumer &consumer, const swss::KeyOpFieldsValuesTuple &tuple);
+    static void recordTuple(ConsumerBase &consumer, const swss::KeyOpFieldsValuesTuple &tuple);
 
     void dumpPendingTasks(std::vector<std::string> &ts);
 protected:
