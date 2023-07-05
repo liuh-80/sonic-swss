@@ -53,7 +53,7 @@ typedef std::map<std::string, RoutingTypeEntry> RoutingTypeTable;
 typedef std::map<std::string, EniEntry> EniTable;
 typedef std::map<std::string, QosEntry> QosTable;
 
-class DashOrch : public ZmqOrch
+class DashOrch : public Orch
 {
 public:
     DashOrch(swss::DBConnector *db, std::vector<std::string> &tables, swss::ZmqServer *zmqServer);

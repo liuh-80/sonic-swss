@@ -79,7 +79,7 @@ struct InboundRoutingBulkContext
     }
 };
 
-class DashRouteOrch : public ZmqOrch
+class DashRouteOrch : public Orch
 {
 public:
     DashRouteOrch(swss::DBConnector *db, std::vector<std::string> &tables, DashOrch *dash_orch, swss::ZmqServer *zmqServer);

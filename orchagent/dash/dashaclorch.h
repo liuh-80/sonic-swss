@@ -66,7 +66,7 @@ using DashAclTable = std::unordered_map<std::string, DashAclEntry>;
 using DashAclGroupTable = std::unordered_map<std::string, DashAclGroupEntry>;
 using DashAclRuleTable = std::unordered_map<std::string, DashAclRuleEntry>;
 
-class DashAclOrch : public ZmqOrch
+class DashAclOrch : public Orch
 {
 public:
     using TaskArgs = std::vector<swss::FieldValueTuple>;
