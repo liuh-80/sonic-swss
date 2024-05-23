@@ -182,7 +182,7 @@ struct LabelRouteBulkContext
     }
 };
 
-class RouteOrch : public ZmqOrch, public Subject
+class RouteOrch : public Orch, public Subject
 {
 public:
     RouteOrch(DBConnector *db, vector<table_name_with_pri_t> &tableNames, SwitchOrch *switchOrch, NeighOrch *neighOrch, IntfsOrch *intfsOrch, VRFOrch *vrfOrch, FgNhgOrch *fgNhgOrch, Srv6Orch *srv6Orch, swss::ZmqServer *zmqServer = nullptr);
@@ -272,8 +272,8 @@ private:
 
     void updateDefRouteState(string ip, bool add=false);
 
-    void doTask(ConsumerBase& consumer);
-    void doLabelTask(ConsumerBase& consumer);
+    void doTask(Consumer& consumer);
+    void doLabelTask(Consumer& consumer);
 
     const NhgBase &getNhg(const std::string& nhg_index);
     void incNhgRefCount(const std::string& nhg_index);
