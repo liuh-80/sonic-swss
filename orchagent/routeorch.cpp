@@ -482,6 +482,7 @@ void RouteOrch::doTask(Consumer& consumer)
         return;
     }
 
+    SWSS_LOG_WARN("[PERF_TEST] RouteOrch::doTask start.");
     /* Default handling is for APP_ROUTE_TABLE_NAME */
     auto it = consumer.m_toSync.begin();
     while (it != consumer.m_toSync.end())
@@ -937,6 +938,7 @@ void RouteOrch::doTask(Consumer& consumer)
             }
         }
 
+        SWSS_LOG_WARN("[PERF_TEST] RouteOrch::doTask gRouteBulker flush: %d", (int)(toBulk.size()));
         // Flush the route bulker, so routes will be written to syncd and ASIC
         gRouteBulker.flush();
 
@@ -1039,6 +1041,8 @@ void RouteOrch::doTask(Consumer& consumer)
             }
         }
     }
+
+    SWSS_LOG_WARN("[PERF_TEST] RouteOrch::doTask end.");
 }
 
 void RouteOrch::notifyNextHopChangeObservers(sai_object_id_t vrf_id, const IpPrefix &prefix, const NextHopGroupKey &nexthops, bool add)
