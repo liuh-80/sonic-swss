@@ -279,6 +279,8 @@ bool VlanMgr::isVlanMacOk()
 
 void VlanMgr::doVlanTask(Consumer &consumer)
 {
+    SWSS_LOG_WARN("[HUA] VlanMgr::doVlanTask");
+
     if (!isVlanMacOk())
     {
         SWSS_LOG_DEBUG("VLAN mac not ready, delaying VLAN task");
@@ -423,6 +425,7 @@ void VlanMgr::doVlanTask(Consumer &consumer)
             {
                 removeHostVlan(vlan_id);
                 m_vlans.erase(key);
+                SWSS_LOG_WARN("[HUA] VlanMgr::doVlanTask m_appVlanTableProducer.del");
                 m_appVlanTableProducer.del(key);
                 m_stateVlanTable.del(key);
             }
@@ -556,6 +559,8 @@ void VlanMgr::processUntaggedVlanMembers(string vlan, const string &members)
 
 void VlanMgr::doVlanMemberTask(Consumer &consumer)
 {
+    SWSS_LOG_WARN("[HUA] VlanMgr::doVlanMemberTask");
+
     auto it = consumer.m_toSync.begin();
     while (it != consumer.m_toSync.end())
     {
@@ -657,6 +662,7 @@ void VlanMgr::doVlanMemberTask(Consumer &consumer)
                 key = VLAN_PREFIX + to_string(vlan_id);
                 key += DEFAULT_KEY_SEPARATOR;
                 key += port_alias;
+                SWSS_LOG_WARN("[HUA] VlanMgr::doVlanMemberTask m_appVlanMemberTableProducer.del");
                 m_appVlanMemberTableProducer.del(key);
                 m_stateVlanMemberTable.del(kfvKey(t));
             }

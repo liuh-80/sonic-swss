@@ -245,6 +245,12 @@ void Consumer::execute()
     auto table = static_cast<swss::ConsumerTableBase *>(getSelectable());
     std::deque<KeyOpFieldsValuesTuple> entries;
     table->pops(entries);
+    SWSS_LOG_WARN("[HUA] Consumer::execute %s pops %d", table->getTableName().c_str(), (int)(entries.size()));
+    for (auto& entry: entries)
+    {
+        // the timestamp of swss.rec difficult to match with syslog, add this info here
+        SWSS_LOG_WARN("[HUA] Consumer::execute entry: %s", dumpTuple(entry).c_str());
+    }
 
     // add to sync
     addToSync(entries);

@@ -4922,6 +4922,7 @@ void PortsOrch::doPortTask(Consumer &consumer)
 void PortsOrch::doVlanTask(Consumer &consumer)
 {
     SWSS_LOG_ENTER();
+    SWSS_LOG_WARN("[HUA] PortsOrch::doVlanTask");
 
     auto it = consumer.m_toSync.begin();
     while (it != consumer.m_toSync.end())
@@ -5042,6 +5043,7 @@ void PortsOrch::doVlanTask(Consumer &consumer)
 void PortsOrch::doVlanMemberTask(Consumer &consumer)
 {
     SWSS_LOG_ENTER();
+    SWSS_LOG_WARN("[HUA] PortsOrch::doVlanTask");
 
     auto it = consumer.m_toSync.begin();
     while (it != consumer.m_toSync.end())
@@ -5644,10 +5646,12 @@ void PortsOrch::doTask(Consumer &consumer)
 
         if (table_name == APP_VLAN_TABLE_NAME)
         {
+            SWSS_LOG_WARN("[HUA] PortsOrch::doTask doVlanTask");
             doVlanTask(consumer);
         }
         else if (table_name == APP_VLAN_MEMBER_TABLE_NAME)
         {
+            SWSS_LOG_WARN("[HUA] PortsOrch::doTask doVlanMemberTask");
             doVlanMemberTask(consumer);
         }
         else if (table_name == APP_LAG_TABLE_NAME || table_name == CHASSIS_APP_LAG_TABLE_NAME)
