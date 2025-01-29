@@ -544,6 +544,12 @@ bool RouteOrch::invalidnexthopinNextHopGroup(const NextHopKey &nexthop, uint32_t
         }
 
         nexthop_id = nhopgroup->second.nhopgroup_members[nexthop].next_hop_id;
+
+        if (nhopgroup->second.is_default_route_nh_swap)
+        {
+            continue;
+        }
+
         status = sai_next_hop_group_api->remove_next_hop_group_member(nexthop_id);
 
         if (status != SAI_STATUS_SUCCESS)
