@@ -7,6 +7,7 @@
 #include "ipprefix.h"
 #include "dbconnector.h"
 #include "producerstatetable.h"
+#include "zmqproducerstatetable.h"
 #include "fpmsyncd/fpmlink.h"
 #include "fpmsyncd/routesync.h"
 #include "macaddress.h"
@@ -76,14 +77,21 @@ static decltype(auto) makeNlAddr(const T& ip)
 }
 
 
-RouteSync::RouteSync(RedisPipeline *pipeline) :
-    m_routeTable(pipeline, APP_ROUTE_TABLE_NAME, true),
-    m_label_routeTable(pipeline, APP_LABEL_ROUTE_TABLE_NAME, true),
+RouteSync::RouteSync(RedisPipeline *pipeline, std::shared_ptr<ZmqClient> zmqClient) :
     m_vnet_routeTable(pipeline, APP_VNET_RT_TABLE_NAME, true),
     m_vnet_tunnelTable(pipeline, APP_VNET_RT_TUNNEL_TABLE_NAME, true),
-    m_warmStartHelper(pipeline, &m_routeTable, APP_ROUTE_TABLE_NAME, "bgp", "bgp"),
     m_nl_sock(NULL), m_link_cache(NULL)
 {
+    if (zmqClient != nullptr) {
+        m_routeTable = unique_ptr<ProducerStateTable>(new ZmqProducerStateTable(pipeline, APP_ROUTE_TABLE_NAME, *zmqClient, true));
+        m_label_routeTable = unique_ptr<ProducerStateTable>(new ZmqProducerStateTable(pipeline, APP_LABEL_ROUTE_TABLE_NAME, *zmqClient, true));
+    }
+    else {
+        m_routeTable = make_unique<ProducerStateTable>(pipeline, APP_ROUTE_TABLE_NAME, true);
+        m_label_routeTable = make_unique<ProducerStateTable>(pipeline, APP_LABEL_ROUTE_TABLE_NAME, true);
+    }
+    
+    m_warmStartHelper = make_unique<WarmStartHelper>(pipeline, m_routeTable.get(), APP_ROUTE_TABLE_NAME, "bgp", "bgp");
     m_nl_sock = nl_socket_alloc();
     nl_connect(m_nl_sock, NETLINK_ROUTE);
     rtnl_link_alloc_cache(m_nl_sock, AF_UNSPEC, &m_link_cache);
@@ -489,13 +497,14 @@ void RouteSync::onEvpnRouteMsg(struct nlmsghdr *h, int len)
      * Upon arrival of a delete msg we could either push the change right away,
      * or we could opt to defer it if we are going through a warm-reboot cycle.
      */
-    bool warmRestartInProgress = m_warmStartHelper.inProgress();
+    bool warmRestartInProgress = m_warmStartHelper->inProgress();
 
     if (nlmsg_type == RTM_DELROUTE)
     {
         if (!warmRestartInProgress)
         {
-            m_routeTable.del(destipprefix);
+        	SWSS_LOG_ERROR("[TEST] RouteSync::onEvpnRouteMsg, m_routeTable del: %s",destipprefix);
+            m_routeTable->del(destipprefix);
             return;
         }
         else
@@ -507,7 +516,7 @@ void RouteSync::onEvpnRouteMsg(struct nlmsghdr *h, int len)
             const KeyOpFieldsValuesTuple kfv = std::make_tuple(destipprefix,
                                                                DEL_COMMAND,
                                                                fvVector);
-            m_warmStartHelper.insertRefreshMap(kfv);
+            m_warmStartHelper->insertRefreshMap(kfv);
             return;
         }
     }
@@ -576,7 +585,8 @@ void RouteSync::onEvpnRouteMsg(struct nlmsghdr *h, int len)
 
     if (!warmRestartInProgress)
     {
-        m_routeTable.set(destipprefix, fvVector);
+    	SWSS_LOG_ERROR("[TEST] RouteSync::onEvpnRouteMsg, m_routeTable set: %s",destipprefix);
+        m_routeTable->set(destipprefix, fvVector);
         SWSS_LOG_DEBUG("RouteTable set msg: %s vtep:%s vni:%s mac:%s intf:%s protocol:%s",
                        destipprefix, nexthops.c_str(), vni_list.c_str(), mac_list.c_str(), intf_list.c_str(),
                        proto_str.c_str());
@@ -594,7 +604,7 @@ void RouteSync::onEvpnRouteMsg(struct nlmsghdr *h, int len)
         const KeyOpFieldsValuesTuple kfv = std::make_tuple(destipprefix,
                                                            SET_COMMAND,
                                                            fvVector);
-        m_warmStartHelper.insertRefreshMap(kfv);
+        m_warmStartHelper->insertRefreshMap(kfv);
     }
     return;
 }
@@ -724,13 +734,14 @@ void RouteSync::onRouteMsg(int nlmsg_type, struct nl_object *obj, char *vrf)
      * Upon arrival of a delete msg we could either push the change right away,
      * or we could opt to defer it if we are going through a warm-reboot cycle.
      */
-    bool warmRestartInProgress = m_warmStartHelper.inProgress();
+    bool warmRestartInProgress = m_warmStartHelper->inProgress();
 
     if (nlmsg_type == RTM_DELROUTE)
     {
         if (!warmRestartInProgress)
         {
-            m_routeTable.del(destipprefix);
+            SWSS_LOG_ERROR("[TEST] RouteSync::onRouteMsg, m_routeTable del: %s", destipprefix);
+            m_routeTable->del(destipprefix);
             return;
         }
         else
@@ -742,7 +753,7 @@ void RouteSync::onRouteMsg(int nlmsg_type, struct nl_object *obj, char *vrf)
             const KeyOpFieldsValuesTuple kfv = std::make_tuple(destipprefix,
                                                                DEL_COMMAND,
                                                                fvVector);
-            m_warmStartHelper.insertRefreshMap(kfv);
+            m_warmStartHelper->insertRefreshMap(kfv);
             return;
         }
     }
@@ -764,7 +775,8 @@ void RouteSync::onRouteMsg(int nlmsg_type, struct nl_object *obj, char *vrf)
             vector<FieldValueTuple> fvVector;
             FieldValueTuple fv("blackhole", "true");
             fvVector.push_back(fv);
-            m_routeTable.set(destipprefix, fvVector);
+            SWSS_LOG_ERROR("[TEST] RouteSync::onRouteMsg, m_routeTable set: %s", destipprefix);
+            m_routeTable->set(destipprefix, fvVector);
             return;
         }
         case RTN_UNICAST:
@@ -817,7 +829,8 @@ void RouteSync::onRouteMsg(int nlmsg_type, struct nl_object *obj, char *vrf)
                     SWSS_LOG_NOTICE("RouteTable del msg for route with only one nh on eth0/docker0: %s %s %s %s",
                             destipprefix, gw_list.c_str(), intf_list.c_str(), mpls_list.c_str());
 
-                    m_routeTable.del(destipprefix);
+                    SWSS_LOG_ERROR("[TEST] RouteSync::onRouteMsg, m_routeTable del 2: %s", destipprefix);
+                    m_routeTable->del(destipprefix);
                 }
                 else
                 {
@@ -828,7 +841,7 @@ void RouteSync::onRouteMsg(int nlmsg_type, struct nl_object *obj, char *vrf)
                     const KeyOpFieldsValuesTuple kfv = std::make_tuple(destipprefix,
                                                                        DEL_COMMAND,
                                                                        fvVector);
-                    m_warmStartHelper.insertRefreshMap(kfv);
+                    m_warmStartHelper->insertRefreshMap(kfv);
                 }
             }
             return;
@@ -865,7 +878,8 @@ void RouteSync::onRouteMsg(int nlmsg_type, struct nl_object *obj, char *vrf)
 
     if (!warmRestartInProgress)
     {
-        m_routeTable.set(destipprefix, fvVector);
+        SWSS_LOG_ERROR("[TEST] RouteSync::onRouteMsg, m_routeTable set 2: %s", destipprefix);
+        m_routeTable->set(destipprefix, fvVector);
         SWSS_LOG_DEBUG("RouteTable set msg: %s %s %s %s", destipprefix,
                        gw_list.c_str(), intf_list.c_str(), mpls_list.c_str());
     }
@@ -882,7 +896,7 @@ void RouteSync::onRouteMsg(int nlmsg_type, struct nl_object *obj, char *vrf)
         const KeyOpFieldsValuesTuple kfv = std::make_tuple(destipprefix,
                                                            SET_COMMAND,
                                                            fvVector);
-        m_warmStartHelper.insertRefreshMap(kfv);
+        m_warmStartHelper->insertRefreshMap(kfv);
     }
 }
 
@@ -904,7 +918,7 @@ void RouteSync::onLabelRouteMsg(int nlmsg_type, struct nl_object *obj)
 
     if (nlmsg_type == RTM_DELROUTE)
     {
-        m_label_routeTable.del(destaddr);
+        m_label_routeTable->del(destaddr);
         return;
     }
     else if (nlmsg_type != RTM_NEWROUTE)
@@ -932,7 +946,7 @@ void RouteSync::onLabelRouteMsg(int nlmsg_type, struct nl_object *obj)
             vector<FieldValueTuple> fvVector;
             FieldValueTuple fv("blackhole", "true");
             fvVector.push_back(fv);
-            m_label_routeTable.set(destaddr, fvVector);
+            m_label_routeTable->set(destaddr, fvVector);
             return;
         }
         case RTN_UNICAST:
@@ -975,7 +989,7 @@ void RouteSync::onLabelRouteMsg(int nlmsg_type, struct nl_object *obj)
     }
     fvVector.push_back(mpls_pop);
 
-    m_label_routeTable.set(destaddr, fvVector);
+    m_label_routeTable->set(destaddr, fvVector);
     SWSS_LOG_INFO("LabelRouteTable set msg: %s %s %s %s", destaddr,
                   gw_list.c_str(), intf_list.c_str(), mpls_list.c_str());
 }
@@ -1536,9 +1550,9 @@ void RouteSync::onWarmStartEnd(DBConnector& applStateDb)
         markRoutesOffloaded(applStateDb);
     }
 
-    if (m_warmStartHelper.inProgress())
+    if (m_warmStartHelper->inProgress())
     {
-        m_warmStartHelper.reconcile();
+        m_warmStartHelper->reconcile();
         SWSS_LOG_NOTICE("Warm-Restart reconciliation processed.");
     }
 }
