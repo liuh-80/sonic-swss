@@ -56,6 +56,7 @@ LinkSync::LinkSync(DBConnector *appl_db, DBConnector *state_db) :
                 {
                     if (fvField(it) == "admin_status")
                     {
+                        SWSS_LOG_ERROR("[TEST] LinkSync::LinkSync, erase g_portSet: %s", port.c_str());
                         port_iter = g_portSet.erase(port_iter);
                         portFound = true;
                         break;
@@ -192,6 +193,7 @@ void LinkSync::onMsg(int nlmsg_type, struct nl_object *obj)
     vector<FieldValueTuple> temp;
     if (m_portTable.get(key, temp))
     {
+        SWSS_LOG_ERROR("[TEST] LinkSync::onMsg, erase g_portSet: %s", key.c_str());
         g_portSet.erase(key);
         FieldValueTuple tuple("state", "ok");
         FieldValueTuple admin_status("admin_status", (admin ? "up" : "down"));

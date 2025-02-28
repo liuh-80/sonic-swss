@@ -138,7 +138,7 @@ bool OrchDaemon::init()
     vector<table_name_with_pri_t> ports_tables = {
         { APP_PORT_TABLE_NAME,        portsorch_base_pri + 5 },
         { APP_SEND_TO_INGRESS_PORT_TABLE_NAME,        portsorch_base_pri + 5 },
-        { APP_VLAN_TABLE_NAME,        portsorch_base_pri + 2 },
+        { APP_VLAN_TABLE_NAME,        portsorch_base_pri     },
         { APP_VLAN_MEMBER_TABLE_NAME, portsorch_base_pri     },
         { APP_LAG_TABLE_NAME,         portsorch_base_pri + 4 },
         { APP_LAG_MEMBER_TABLE_NAME,  portsorch_base_pri     }
@@ -846,6 +846,7 @@ void OrchDaemon::start()
         int ret;
 
         ret = m_select->select(&s, SELECT_TIMEOUT);
+        SWSS_LOG_ERROR("[TEST] OrchDaemon::start, Selectable: %zu ret: %d", (size_t)s, ret);
 
         auto tend = std::chrono::high_resolution_clock::now();
         heartBeat(tend);
@@ -862,6 +863,7 @@ void OrchDaemon::start()
         if (ret == Select::ERROR)
         {
             SWSS_LOG_NOTICE("Error: %s!\n", strerror(errno));
+            SWSS_LOG_ERROR("[TEST] OrchDaemon::start, Error: %s!\n", strerror(errno));
             continue;
         }
 
@@ -885,6 +887,7 @@ void OrchDaemon::start()
         }
 
         auto *c = (Executor *)s;
+        SWSS_LOG_ERROR("[TEST] OrchDaemon::start, Executor: %zu name: %s, pri: %d", (size_t)s, c->getName().c_str(), s->getPri());
         c->execute();
 
         /* After each iteration, periodically check all m_toSync map to

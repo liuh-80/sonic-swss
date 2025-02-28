@@ -133,8 +133,17 @@ int main(int argc, char **argv)
                     vector<FieldValueTuple> attrs = { finish_notice };
                     p.set("PortInitDone", attrs);
                     SWSS_LOG_NOTICE("PortInitDone");
+                    SWSS_LOG_ERROR("[TEST] Portsyncd::main, send PortInitDone");
 
                     g_init = true;
+                }
+                else
+                {
+                    for (auto& port : g_portSet)
+                    {
+                        SWSS_LOG_ERROR("[TEST] Portsyncd::main, g_portSet: %s", port.c_str());
+                    }
+
                 }
             }
             else

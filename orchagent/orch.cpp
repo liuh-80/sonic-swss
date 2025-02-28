@@ -260,6 +260,12 @@ void Consumer::execute()
     std::deque<KeyOpFieldsValuesTuple> entries;
     table->pops(entries);
 
+    SWSS_LOG_ERROR("[TEST] Consumer::execute, table pops: %s", table->getTableName().c_str());
+    for (auto& entry : entries)
+    {
+        SWSS_LOG_ERROR("[TEST] Consumer::execute, table pops entry: %s, op: %s", kfvKey(entry).c_str(), kfvOp(entry).c_str());
+    }
+
     // add to sync
     addToSync(entries);
 
@@ -807,6 +813,9 @@ void Orch::addConsumer(DBConnector *db, string tableName, int pri)
 
 void Orch::addExecutor(Executor* executor)
 {
+    Selectable *sel = (Selectable *)executor->getSelectable();
+    Selectable *exec = (Selectable *)executor;
+    SWSS_LOG_ERROR("[TEST] Orch::addExecutor: %zu Selectable: %zu, table: %s, pri: %d", (size_t)exec, (size_t)sel, executor->getName().c_str(), sel->getPri());
     auto inserted = m_consumerMap.emplace(std::piecewise_construct,
             std::forward_as_tuple(executor->getName()),
             std::forward_as_tuple(executor));

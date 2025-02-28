@@ -1324,6 +1324,12 @@ void PortsOrch::removeDefaultBridgePorts()
 
 bool PortsOrch::allPortsReady()
 {
+    SWSS_LOG_ERROR("[TEST] allPortsReady, m_initDone:%d", m_initDone);
+    for (auto& pendingPort : m_pendingPortSet)
+    {
+        SWSS_LOG_ERROR("[TEST] allPortsReady, pendingPort:%s", pendingPort.c_str());
+    }
+
     return m_initDone && m_pendingPortSet.empty();
 }
 
@@ -3686,6 +3692,7 @@ bool PortsOrch::bake()
             continue;
         }
 
+        SWSS_LOG_ERROR("[TEST] PortsOrch::bake, m_pendingPortSet emplace: %s", alias.c_str());
         m_pendingPortSet.emplace(alias);
     }
 
@@ -3868,6 +3875,7 @@ void PortsOrch::doPortTask(Consumer &consumer)
                 addSystemPorts();
                 m_initDone = true;
                 SWSS_LOG_INFO("Got PortInitDone notification from portsyncd");
+                SWSS_LOG_ERROR("[TEST] PortsOrch::doPortTask, Got PortInitDone notification from portsyncd");
             }
 
             it = taskMap.erase(it);
@@ -3876,6 +3884,7 @@ void PortsOrch::doPortTask(Consumer &consumer)
 
         PortConfig pCfg(key, op);
 
+        SWSS_LOG_ERROR("[TEST] PortsOrch::doPortTask, port config op: %s key: %s", op.c_str(), key.c_str());
         if (op == SET_COMMAND)
         {
             auto parsePortFvs = [&](auto& fvMap) -> bool
@@ -4027,12 +4036,14 @@ void PortsOrch::doPortTask(Consumer &consumer)
             if (!gBufferOrch->isPortReady(pCfg.key))
             {
                 // buffer configuration hasn't been applied yet. save it for future retry
+                SWSS_LOG_ERROR("[TEST] PortsOrch::doPortTask, m_pendingPortSet emplace pCfg.key: %s", pCfg.key.c_str());
                 m_pendingPortSet.emplace(pCfg.key);
                 it++;
                 continue;
             }
             else
             {
+                SWSS_LOG_ERROR("[TEST] PortsOrch::doPortTask, m_pendingPortSet erase pCfg.key: %s", pCfg.key.c_str());
                 m_pendingPortSet.erase(pCfg.key);
             }
 
@@ -5644,6 +5655,7 @@ void PortsOrch::doTask(Consumer &consumer)
         /* Wait for all ports to be initialized */
         if (!allPortsReady())
         {
+            SWSS_LOG_ERROR("[TEST] PortsOrch::doTask, allPortsReady false 2");
             return;
         }
 
@@ -8100,6 +8112,7 @@ void PortsOrch::doTask(NotificationConsumer &consumer)
     /* Wait for all ports to be initialized */
     if (!allPortsReady())
     {
+        SWSS_LOG_ERROR("[TEST] PortsOrch::doTask, allPortsReady false 1");
         return;
     }
 

@@ -234,6 +234,7 @@ void PortMgr::doTask(Consumer &consumer)
         else if (op == DEL_COMMAND)
         {
             SWSS_LOG_NOTICE("Delete Port: %s", alias.c_str());
+            SWSS_LOG_ERROR("[TEST] PortMgr::doTask del: %s", alias.c_str());
             m_appPortTable.del(alias);
             m_portList.erase(alias);
         }
@@ -247,6 +248,7 @@ bool PortMgr::writeConfigToAppDb(const std::string &alias, const std::string &fi
     vector<FieldValueTuple> fvs;
     FieldValueTuple fv(field, value);
     fvs.push_back(fv);
+    SWSS_LOG_ERROR("[TEST] PortMgr::writeConfigToAppDb 1: %s", alias.c_str());
     m_appPortTable.set(alias, fvs);
 
     return true;
@@ -254,6 +256,7 @@ bool PortMgr::writeConfigToAppDb(const std::string &alias, const std::string &fi
 
 bool PortMgr::writeConfigToAppDb(const std::string &alias, std::vector<FieldValueTuple> &field_values)
 {
+    SWSS_LOG_ERROR("[TEST] PortMgr::writeConfigToAppDb 2: %s", alias.c_str());
     m_appPortTable.set(alias, field_values);
     return true;
 }
