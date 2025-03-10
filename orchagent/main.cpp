@@ -459,7 +459,7 @@ int main(int argc, char **argv)
                 auto interval = atoi(optarg);
                 if (interval >= 0)
                 {
-                    SWSS_LOG_NOTICE("Setting heartbeat interval as %ld", interval);
+                    SWSS_LOG_NOTICE("Setting heartbeat interval as %d", interval);
                 }
                 else
                 {
