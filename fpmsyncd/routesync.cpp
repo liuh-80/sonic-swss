@@ -1084,7 +1084,7 @@ void RouteSync::onSrv6SteerRouteMsg(struct nlmsghdr *h, int len)
         return;
     }
 
-    bool warmRestartInProgress = m_warmStartHelper.inProgress();
+    bool warmRestartInProgress = m_warmStartHelper->inProgress();
 
     if (nlmsg_type == RTM_DELROUTE)
     {
@@ -1093,7 +1093,7 @@ void RouteSync::onSrv6SteerRouteMsg(struct nlmsghdr *h, int len)
         if (!warmRestartInProgress)
         {
             SWSS_LOG_ERROR("[TEST] RouteSync::onSrv6SteerRouteMsg, m_routeTable del: %s",routeTableKey);
-            m_routeTable.del(routeTableKey);
+            m_routeTable->del(routeTableKey);
             m_srv6SidListTable.del(srv6SidListTableKey);
             return;
         }
@@ -1106,7 +1106,7 @@ void RouteSync::onSrv6SteerRouteMsg(struct nlmsghdr *h, int len)
             const KeyOpFieldsValuesTuple kfv = std::make_tuple(routeTableKey,
                                                                DEL_COMMAND,
                                                                fvVector);
-            m_warmStartHelper.insertRefreshMap(kfv);
+            m_warmStartHelper->insertRefreshMap(kfv);
             return;
         }
     }
@@ -1140,7 +1140,7 @@ void RouteSync::onSrv6SteerRouteMsg(struct nlmsghdr *h, int len)
         if (!warmRestartInProgress)
         {
             SWSS_LOG_ERROR("[TEST] RouteSync::onSrv6SteerRouteMsg, m_routeTable set: %s",routeTableKey);
-            m_routeTable.set(routeTableKey, fvVectorRoute);
+            m_routeTable->set(routeTableKey, fvVectorRoute);
             SWSS_LOG_DEBUG("RouteTable set msg: %s vpn_sid: %s src_addr:%s",
                         routeTableKey, vpn_sid_str.c_str(),
                         src_addr_str.c_str());
@@ -1158,7 +1158,7 @@ void RouteSync::onSrv6SteerRouteMsg(struct nlmsghdr *h, int len)
 
             const KeyOpFieldsValuesTuple kfv =
                 std::make_tuple(routeTableKey, SET_COMMAND, fvVectorRoute);
-            m_warmStartHelper.insertRefreshMap(kfv);
+            m_warmStartHelper->insertRefreshMap(kfv);
         }
     }
 

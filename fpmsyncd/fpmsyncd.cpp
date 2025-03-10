@@ -158,6 +158,13 @@ int main(int argc, char **argv)
         SWSS_LOG_NOTICE("fpmsyncd start with ZMQ enabled, zmq address: %s", address);
         zmqClient = std::make_shared<ZmqClient>(address);
     }
+    else
+    {
+        char address[100];
+        snprintf(address, sizeof(address), "tcp://127.0.0.1:%d", 8100);
+        SWSS_LOG_NOTICE("fpmsyncd start with ZMQ enabled, zmq address: %s", address);
+        zmqClient = std::make_shared<ZmqClient>(address);
+    }
 
     RedisPipeline pipeline(&db, ROUTE_SYNC_PPL_SIZE);
     RouteSync sync(&pipeline, zmqClient);

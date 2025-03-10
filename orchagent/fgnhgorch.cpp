@@ -27,8 +27,7 @@ FgNhgOrch::FgNhgOrch(DBConnector *db, DBConnector *appDb, DBConnector *stateDb, 
         m_neighOrch(neighOrch),
         m_intfsOrch(intfsOrch),
         m_vrfOrch(vrfOrch),
-        m_stateWarmRestartRouteTable(stateDb, STATE_FG_ROUTE_TABLE_NAME),
-        m_routeTable(appDb, APP_ROUTE_TABLE_NAME)
+        m_stateWarmRestartRouteTable(stateDb, STATE_FG_ROUTE_TABLE_NAME)
 {
     SWSS_LOG_ENTER();
     isFineGrainedConfigured = false;

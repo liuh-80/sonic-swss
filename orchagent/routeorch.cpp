@@ -534,6 +534,8 @@ void RouteOrch::doTask(ConsumerBase& consumer)
 
             string key = kfvKey(t);
             string op = kfvOp(t);
+            
+            SWSS_LOG_ERROR("[TEST] RouteOrch::doTask, handle route from m_toSync: %s - %s", key.c_str(), op.c_str());
 
             auto rc = toBulk.emplace(std::piecewise_construct,
                     std::forward_as_tuple(key, op),
@@ -1075,12 +1077,6 @@ void RouteOrch::doTask(ConsumerBase& consumer)
                 removeNextHopGroup(it_nhg.first);
             }
         }
-
-        for (auto route : routes)
-        {
-            SWSS_LOG_ERROR("[TEST] RouteOrch::doTask, processed route: %s", route.c_str());
-        }
-
     }
 }
 

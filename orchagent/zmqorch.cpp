@@ -16,6 +16,7 @@ void ZmqConsumer::execute()
         std::deque<KeyOpFieldsValuesTuple> entries;
         table->pops(entries);
         update_size = addToSync(entries);
+        SWSS_LOG_ERROR("[TEST] ZmqConsumer execute update_size: %d", (int)update_size);
     } while (update_size != 0);
 
     drain();
@@ -51,12 +52,12 @@ void ZmqOrch::addConsumer(DBConnector *db, string tableName, int pri, ZmqServer 
     {
         if (zmqServer != nullptr)
         {
-            SWSS_LOG_DEBUG("ZmqConsumer initialize for: %s", tableName.c_str());
+            SWSS_LOG_ERROR("[TEST] ZmqConsumer initialize for: %s", tableName.c_str());
             addExecutor(new ZmqConsumer(new ZmqConsumerStateTable(db, tableName, *zmqServer, gBatchSize, pri), this, tableName));
         }
         else
         {
-            SWSS_LOG_DEBUG("Consumer initialize for: %s", tableName.c_str());
+            SWSS_LOG_ERROR("[TEST] Consumer initialize for: %s", tableName.c_str());
             addExecutor(new Consumer(new ConsumerStateTable(db, tableName, gBatchSize, pri), this, tableName));
         }
     }
