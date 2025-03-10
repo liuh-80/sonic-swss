@@ -459,13 +459,11 @@ int main(int argc, char **argv)
                 auto interval = atoi(optarg);
                 if (interval >= 0)
                 {
-                    heartBeatInterval = interval;
-                    SWSS_LOG_NOTICE("Setting heartbeat interval as %ld", heartBeatInterval);
+                    SWSS_LOG_NOTICE("Setting heartbeat interval as %ld", interval);
                 }
                 else
                 {
-                    heartBeatInterval = HEART_BEAT_INTERVAL_MSECS_DEFAULT;
-                    SWSS_LOG_ERROR("Invalid input for heartbeat interval: %d. use default interval: %ld", interval, heartBeatInterval);
+                    SWSS_LOG_ERROR("Invalid input for heartbeat interval: %d.", interval);
                 }
             }
             break;
