@@ -535,6 +535,7 @@ void RouteOrch::doTask(Consumer& consumer)
             string key = kfvKey(t);
             string op = kfvOp(t);
 
+            SWSS_LOG_ERROR("[TEST] RouteOrch::doTask, handle route from m_toSync: %s - %s", key.c_str(), op.c_str());
             auto rc = toBulk.emplace(std::piecewise_construct,
                     std::forward_as_tuple(key, op),
                     std::forward_as_tuple(key, (op == SET_COMMAND)));
@@ -971,7 +972,10 @@ void RouteOrch::doTask(Consumer& consumer)
 
         // Flush the route bulker, so routes will be written to syncd and ASIC
         gRouteBulker.flush();
-
+        SWSS_LOG_ERROR("[TEST] RouteOrch::doTask, gRouteBulker.flush: %d - %d - %d",
+            (int)(gRouteBulker.creating_entries_count()),
+            (int)(gRouteBulker.setting_entries_count()),
+            (int)(gRouteBulker.removing_entries_count()));
         // Go through the bulker results
         auto it_prev = consumer.m_toSync.begin();
         m_bulkNhgReducedRefCnt.clear();

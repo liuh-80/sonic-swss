@@ -772,6 +772,7 @@ void RouteSync::onEvpnRouteMsg(struct nlmsghdr *h, int len)
     {
         if (!warmRestartInProgress)
         {
+            SWSS_LOG_ERROR("[TEST] RouteSync::onEvpnRouteMsg, m_routeTable del: %s",destipprefix);
             m_routeTable.del(destipprefix);
             return;
         }
@@ -853,6 +854,7 @@ void RouteSync::onEvpnRouteMsg(struct nlmsghdr *h, int len)
 
     if (!warmRestartInProgress)
     {
+        SWSS_LOG_ERROR("[TEST] RouteSync::onEvpnRouteMsg, m_routeTable set: %s",destipprefix);
         m_routeTable.set(destipprefix, fvVector);
         SWSS_LOG_DEBUG("RouteTable set msg: %s vtep:%s vni:%s mac:%s intf:%s protocol:%s",
                        destipprefix, nexthops.c_str(), vni_list.c_str(), mac_list.c_str(), intf_list.c_str(),
@@ -1082,6 +1084,7 @@ void RouteSync::onSrv6SteerRouteMsg(struct nlmsghdr *h, int len)
 
         if (!warmRestartInProgress)
         {
+            SWSS_LOG_ERROR("[TEST] RouteSync::onSrv6SteerRouteMsg, m_routeTable del: %s",routeTableKey);
             m_routeTable.del(routeTableKey);
             m_srv6SidListTable.del(srv6SidListTableKey);
             return;
@@ -1128,6 +1131,7 @@ void RouteSync::onSrv6SteerRouteMsg(struct nlmsghdr *h, int len)
         }
         if (!warmRestartInProgress)
         {
+            SWSS_LOG_ERROR("[TEST] RouteSync::onSrv6SteerRouteMsg, m_routeTable set: %s",routeTableKey);
             m_routeTable.set(routeTableKey, fvVectorRoute);
             SWSS_LOG_DEBUG("RouteTable set msg: %s vpn_sid: %s src_addr:%s",
                         routeTableKey, vpn_sid_str.c_str(),
@@ -1587,6 +1591,8 @@ void RouteSync::onRouteMsg(int nlmsg_type, struct nl_object *obj, char *vrf)
     {
         if (!warmRestartInProgress)
         {
+            SWSS_LOG_ERROR("[TEST] RouteSync::onRouteMsg, m_routeTable del: %s", destipprefix);
+            m_routeTable->del(destipprefix);
             m_routeTable.del(destipprefix);
             return;
         }
@@ -1621,6 +1627,7 @@ void RouteSync::onRouteMsg(int nlmsg_type, struct nl_object *obj, char *vrf)
             vector<FieldValueTuple> fvVector;
             FieldValueTuple fv("blackhole", "true");
             fvVector.push_back(fv);
+            SWSS_LOG_ERROR("[TEST] RouteSync::onRouteMsg, m_routeTable set: %s", destipprefix);
             m_routeTable.set(destipprefix, fvVector);
             return;
         }
@@ -1674,6 +1681,7 @@ void RouteSync::onRouteMsg(int nlmsg_type, struct nl_object *obj, char *vrf)
                     SWSS_LOG_NOTICE("RouteTable del msg for route with only one nh on eth0/docker0: %s %s %s %s",
                             destipprefix, gw_list.c_str(), intf_list.c_str(), mpls_list.c_str());
 
+                    SWSS_LOG_ERROR("[TEST] RouteSync::onRouteMsg, m_routeTable del 2: %s", destipprefix);
                     m_routeTable.del(destipprefix);
                 }
                 else
@@ -1716,6 +1724,7 @@ void RouteSync::onRouteMsg(int nlmsg_type, struct nl_object *obj, char *vrf)
 
     if (!warmRestartInProgress)
     {
+        SWSS_LOG_ERROR("[TEST] RouteSync::onRouteMsg, m_routeTable set 2: %s", destipprefix);
         m_routeTable.set(destipprefix, fvVector);
         SWSS_LOG_DEBUG("RouteTable set msg: %s %s %s %s", destipprefix,
                        gw_list.c_str(), intf_list.c_str(), mpls_list.c_str());
