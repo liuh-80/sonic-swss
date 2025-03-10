@@ -1592,7 +1592,6 @@ void RouteSync::onRouteMsg(int nlmsg_type, struct nl_object *obj, char *vrf)
         if (!warmRestartInProgress)
         {
             SWSS_LOG_ERROR("[TEST] RouteSync::onRouteMsg, m_routeTable del: %s", destipprefix);
-            m_routeTable->del(destipprefix);
             m_routeTable.del(destipprefix);
             return;
         }
