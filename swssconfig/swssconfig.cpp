@@ -48,7 +48,7 @@ bool write_db_data(vector<KeyOpFieldsValuesTuple> &db_items)
     unordered_map<string, ProducerStateTable*> table_map;
 
     // [Hua] test code, need improve to a parameter
-    ZmqClient zmqClient("tcp://localhost:8100");
+    ZmqClient zmqClient("tcp://127.0.0.1:8100");
     SWSS_LOG_WARN("[Hua] write_db_data start.");
 
     for (auto &db_item : db_items)

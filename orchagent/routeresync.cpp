@@ -22,7 +22,7 @@ int main(int argc, char **argv)
     SWSS_LOG_ENTER();
 
     // [Hua] test code, need improve to a parameter
-    ZmqClient zmqClient("tcp://localhost:8100");
+    ZmqClient zmqClient("tcp://127.0.0.1:8100");
 
     DBConnector db("APPL_DB", 0);
     ZmqProducerStateTable r(&db, APP_ROUTE_TABLE_NAME, zmqClient);

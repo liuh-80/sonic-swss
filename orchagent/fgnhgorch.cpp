@@ -35,7 +35,7 @@ FgNhgOrch::FgNhgOrch(DBConnector *db, DBConnector *appDb, DBConnector *stateDb, 
 
     ProducerStateTable *producerStateTablePtr = nullptr;
     if (zmqServer) {
-        ZmqClient *zmqClientPtr = new ZmqClient("tcp://localhost:" + to_string(ORCH_ZMQ_PORT));
+        ZmqClient *zmqClientPtr = new ZmqClient("tcp://127.0.0.1:8100");
         m_zmqClient = std::shared_ptr<ZmqClient>(zmqClientPtr);
         producerStateTablePtr = new ZmqProducerStateTable(appDb, APP_ROUTE_TABLE_NAME, *zmqClientPtr);
     }
