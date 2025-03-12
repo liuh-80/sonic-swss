@@ -528,14 +528,13 @@ void RouteOrch::doTask(ConsumerBase& consumer)
         >                                       toBulk;
 
         // Add or remove routes with a route bulker
+        SWSS_LOG_ERROR("[TEST] RouteOrch::doTask, handle route from m_toSync: %ld", consumer.m_toSync.size());
         while (it != consumer.m_toSync.end())
         {
             KeyOpFieldsValuesTuple t = it->second;
 
             string key = kfvKey(t);
             string op = kfvOp(t);
-            
-            SWSS_LOG_ERROR("[TEST] RouteOrch::doTask, handle route from m_toSync: %s - %s", key.c_str(), op.c_str());
 
             auto rc = toBulk.emplace(std::piecewise_construct,
                     std::forward_as_tuple(key, op),
@@ -972,11 +971,12 @@ void RouteOrch::doTask(ConsumerBase& consumer)
         }
 
         // Flush the route bulker, so routes will be written to syncd and ASIC
+        SWSS_LOG_ERROR("[TEST] RouteOrch::doTask, gRouteBulker.flush start: %d - %d - %d",
+            (int)(gRouteBulker.creating_entries_count()),
+            (int)(gRouteBulker.setting_entries_count()),
+            (int)(gRouteBulker.removing_entries_count()));
         gRouteBulker.flush();
-        SWSS_LOG_ERROR("[TEST] RouteOrch::doTask, gRouteBulker.flush: %d - %d - %d",
-                        (int)(gRouteBulker.creating_entries_count()),
-                        (int)(gRouteBulker.setting_entries_count()),
-                        (int)(gRouteBulker.removing_entries_count()));
+        SWSS_LOG_ERROR("[TEST] RouteOrch::doTask, gRouteBulker.flush end");
 
 
         // Go through the bulker results
