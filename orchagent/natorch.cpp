@@ -4450,13 +4450,18 @@ void NatOrch::doTask(NotificationConsumer& consumer)
 {
     SWSS_LOG_ENTER();
 
-    std::string op;
-    std::string data;
-    std::vector<swss::FieldValueTuple> values;
+    if (consumer.syncIsEmpty())
+    {
+        return;
+    }
+
+    auto kofv = consumer.getSyncFront();
+    std::string data =  kfvKey(kofv);
+    std::string op = kfvOp(kofv);
+    std::vector<swss::FieldValueTuple> values = kfvFieldsValues(kofv);
+    consumer.popSyncFront();
 
     unique_lock<mutex> lock(m_natMutex);
-
-    consumer.pop(op, data, values);
 
     if (&consumer == m_flushNotificationsConsumer)
     {

@@ -228,10 +228,16 @@ void P4Orch::doTask(NotificationConsumer &consumer)
         return;
     }
 
-    std::string op, data;
-    std::vector<swss::FieldValueTuple> values;
+    if (consumer.syncIsEmpty())
+    {
+        return;
+    }
 
-    consumer.pop(op, data, values);
+    auto kofv = consumer.getSyncFront();
+    std::string data =  kfvKey(kofv);
+    std::string op = kfvOp(kofv);
+    std::vector<swss::FieldValueTuple> values = kfvFieldsValues(kofv);
+    consumer.popSyncFront();
 
     if (&consumer == m_portStatusNotificationConsumer)
     {

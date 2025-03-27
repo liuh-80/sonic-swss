@@ -927,16 +927,22 @@ void FdbOrch::doTask(NotificationConsumer& consumer)
         return;
     }
 
+
+    if (consumer.syncIsEmpty())
+    {
+        return;
+    }
+
+    auto kofv = consumer.getSyncFront();
     sai_status_t status;
-    std::string op;
-    std::string data;
-    std::vector<swss::FieldValueTuple> values;
+    std::string data =  kfvKey(kofv);
+    std::string op = kfvOp(kofv);
+    std::vector<swss::FieldValueTuple> values = kfvFieldsValues(kofv);
     string alias;
     string vlan;
     Port port;
     Port vlanPort;
-
-    consumer.pop(op, data, values);
+    consumer.popSyncFront();
 
     if (&consumer == m_flushNotificationsConsumer)
     {

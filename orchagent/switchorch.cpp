@@ -1059,12 +1059,16 @@ void SwitchOrch::doTask(NotificationConsumer& consumer)
 {
     SWSS_LOG_ENTER();
 
-    std::string op;
-    std::string data;
-    std::vector<swss::FieldValueTuple> values;
+    if (consumer.syncIsEmpty())
+    {
+        return;
+    }
 
-    consumer.pop(op, data, values);
-
+    auto kofv = consumer.getSyncFront();
+    std::string data =  kfvKey(kofv);
+    std::string op = kfvOp(kofv);
+    std::vector<swss::FieldValueTuple> values = kfvFieldsValues(kofv);
+    consumer.popSyncFront();
     if (&consumer != m_restartCheckNotificationConsumer)
     {
         return;
