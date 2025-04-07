@@ -1068,8 +1068,13 @@ void RouteOrch::doTask(Consumer& consumer)
             }
         }
 
+        SWSS_LOG_ERROR("[TEST] RouteOrch::doTask, gRouteBulker.flush: %d - %d - %d",
+            (int)(gRouteBulker.creating_entries_count()),
+            (int)(gRouteBulker.setting_entries_count()),
+            (int)(gRouteBulker.removing_entries_count()));
         // Flush the route bulker, so routes will be written to syncd and ASIC
         gRouteBulker.flush();
+        SWSS_LOG_ERROR("[TEST] RouteOrch::doTask, gRouteBulker.flush end");
 
         // Go through the bulker results
         auto it_prev = consumer.m_toSync.begin();
