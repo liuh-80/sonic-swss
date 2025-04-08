@@ -1,6 +1,7 @@
 #include <iostream>
 #include <inttypes.h>
 #include <getopt.h>
+#include <cstdlib>
 #include "logger.h"
 #include "select.h"
 #include "selectabletimer.h"
@@ -132,8 +133,16 @@ int main(int argc, char **argv)
     std::shared_ptr<ZmqClient> zmqClient = nullptr;
     if (options.m_zmq_port != 0)
     {
+        std::getenv("NAMESPACE_ID")
+        auto zmq_port = options.m_zmq_port;
+        if (const char* nsid = std::getenv("NAMESPACE_ID"))
+        {
+            // namespace start from 0, using original ZMQ port for global namespace
+            zmq_port += atoi(nsid) + 1;
+        }
+
         char address[100];
-        snprintf(address, sizeof(address), "tcp://127.0.0.1:%d", options.m_zmq_port);
+        snprintf(address, sizeof(address), "tcp://127.0.0.1:%d", zmq_port);
         SWSS_LOG_NOTICE("fpmsyncd start with ZMQ enabled, zmq address: %s", address);
         zmqClient = std::make_shared<ZmqClient>(address);
     }

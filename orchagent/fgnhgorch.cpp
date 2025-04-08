@@ -36,7 +36,15 @@ FgNhgOrch::FgNhgOrch(DBConnector *db, DBConnector *appDb, DBConnector *stateDb, 
 
     ProducerStateTable *producerStateTablePtr = nullptr;
     if (zmqServer) {
-        ZmqClient *zmqClientPtr = new ZmqClient("tcp://localhost:" + to_string(ORCH_ZMQ_PORT));
+        std::getenv("NAMESPACE_ID")
+        auto zmq_port = to_string(ORCH_ZMQ_PORT);
+        if (const char* nsid = std::getenv("NAMESPACE_ID"))
+        {
+            // namespace start from 0, using original ZMQ port for global namespace
+            zmq_port += atoi(nsid) + 1;
+        }
+
+        ZmqClient *zmqClientPtr = new ZmqClient("tcp://localhost:" + to_string(zmq_port));
         m_zmqClient = std::shared_ptr<ZmqClient>(zmqClientPtr);
         producerStateTablePtr = new ZmqProducerStateTable(appDb, APP_ROUTE_TABLE_NAME, *zmqClientPtr);
     }
