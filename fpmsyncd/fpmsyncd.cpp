@@ -131,21 +131,23 @@ int main(int argc, char **argv)
     std::unique_ptr<NotificationConsumer> routeResponseChannel;
 
     std::shared_ptr<ZmqClient> zmqClient = nullptr;
+    auto zmq_port = 8100;
     if (options.m_zmq_port != 0)
     {
         std::getenv("NAMESPACE_ID")
-        auto zmq_port = options.m_zmq_port;
-        if (const char* nsid = std::getenv("NAMESPACE_ID"))
-        {
-            // namespace start from 0, using original ZMQ port for global namespace
-            zmq_port += atoi(nsid) + 1;
-        }
-
-        char address[100];
-        snprintf(address, sizeof(address), "tcp://127.0.0.1:%d", zmq_port);
-        SWSS_LOG_NOTICE("fpmsyncd start with ZMQ enabled, zmq address: %s", address);
-        zmqClient = std::make_shared<ZmqClient>(address);
+        zmq_port = options.m_zmq_port;
     }
+
+    if (const char* nsid = std::getenv("NAMESPACE_ID"))
+    {
+        // namespace start from 0, using original ZMQ port for global namespace
+        zmq_port += atoi(nsid) + 1;
+    }
+
+    char address[100];
+    snprintf(address, sizeof(address), "tcp://127.0.0.1:%d", zmq_port);
+    SWSS_LOG_NOTICE("fpmsyncd start with ZMQ enabled, zmq address: %s", address);
+    zmqClient = std::make_shared<ZmqClient>(address);
 
     RedisPipeline pipeline(&db);
     RouteSync sync(&pipeline, zmqClient);

@@ -444,7 +444,7 @@ int main(int argc, char **argv)
         case 'q':
             if (optarg)
             {
-                zmq_server_address = optarg;
+                zmq_server_address = optarg + ":" + to_string(zmq_port);
                 enable_zmq = true;
             }
             break;
