@@ -134,7 +134,6 @@ int main(int argc, char **argv)
     auto zmq_port = 8100;
     if (options.m_zmq_port != 0)
     {
-        std::getenv("NAMESPACE_ID")
         zmq_port = options.m_zmq_port;
     }
 
