@@ -343,8 +343,7 @@ int main(int argc, char **argv)
     string record_location = Recorder::DEFAULT_DIR;
     string swss_rec_filename = Recorder::SWSS_FNAME;
     string sairedis_rec_filename = Recorder::SAIREDIS_FNAME;
-    
-    std::getenv("NAMESPACE_ID")
+
     auto zmq_port = to_string(ORCH_ZMQ_PORT);
     if (const char* nsid = std::getenv("NAMESPACE_ID"))
     {
@@ -444,7 +443,7 @@ int main(int argc, char **argv)
         case 'q':
             if (optarg)
             {
-                zmq_server_address = optarg + ":" + to_string(zmq_port);
+                zmq_server_address = string(optarg) + ":" + to_string(zmq_port);
                 enable_zmq = true;
             }
             break;
