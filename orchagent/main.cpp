@@ -344,7 +344,7 @@ int main(int argc, char **argv)
     string swss_rec_filename = Recorder::SWSS_FNAME;
     string sairedis_rec_filename = Recorder::SAIREDIS_FNAME;
 
-    auto zmq_port = ORCH_ZMQ_PORT;
+    int zmq_port = ORCH_ZMQ_PORT;
     if (const char* nsid = std::getenv("NAMESPACE_ID"))
     {
         // namespace start from 0, using original ZMQ port for global namespace
