@@ -351,7 +351,7 @@ int main(int argc, char **argv)
         zmq_port += atoi(nsid) + 1;
     }
 
-    string zmq_server_address = "tcp://127.0.0.1:" + to_string(zmq_port);
+    string zmq_server_address = "tcp://localhost:" + to_string(zmq_port);
     bool   enable_zmq = false;
     string responsepublisher_rec_filename = Recorder::RESPPUB_FNAME;
     int record_type = 3; // Only swss and sairedis recordings enabled by default.

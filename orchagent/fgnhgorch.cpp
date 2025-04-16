@@ -35,8 +35,7 @@ FgNhgOrch::FgNhgOrch(DBConnector *db, DBConnector *appDb, DBConnector *stateDb, 
 
     ProducerStateTable *producerStateTablePtr = nullptr;
     if (zmqServer) {
-        std::getenv("NAMESPACE_ID")
-        auto zmq_port = to_string(ORCH_ZMQ_PORT);
+        int zmq_port = ORCH_ZMQ_PORT;
         if (const char* nsid = std::getenv("NAMESPACE_ID"))
         {
             // namespace start from 0, using original ZMQ port for global namespace
