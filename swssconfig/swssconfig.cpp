@@ -10,6 +10,7 @@
 #include "dbconnector.h"
 #include "producerstatetable.h"
 #include "zmqclient.h"
+#include "zmqserver.h"
 #include "zmqproducerstatetable.h"
 #include <nlohmann/json.hpp>
 
@@ -48,7 +49,16 @@ bool write_db_data(vector<KeyOpFieldsValuesTuple> &db_items)
     unordered_map<string, ProducerStateTable*> table_map;
 
     // [Hua] test code, need improve to a parameter
-    ZmqClient zmqClient("tcp://localhost:8100");
+    int zmq_port = ORCH_ZMQ_PORT;
+    if (const char* nsid = std::getenv("NAMESPACE_ID"))
+    {
+        // namespace start from 0, using original ZMQ port for global namespace
+        zmq_port += atoi(nsid) + 1;
+    }
+
+    char address[100];
+    snprintf(address, sizeof(address), "tcp://localhost:%d", zmq_port);
+    ZmqClient zmqClient(address);
     SWSS_LOG_WARN("[Hua] write_db_data start.");
 
     for (auto &db_item : db_items)

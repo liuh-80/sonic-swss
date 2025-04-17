@@ -10,6 +10,7 @@
 #include "notificationconsumer.h"
 #include "subscriberstatetable.h"
 #include "zmqclient.h"
+#include "zmqserver.h"
 #include "warmRestartHelper.h"
 #include "fpmsyncd/fpmlink.h"
 #include "fpmsyncd/routesync.h"
@@ -131,7 +132,7 @@ int main(int argc, char **argv)
     std::unique_ptr<NotificationConsumer> routeResponseChannel;
 
     std::shared_ptr<ZmqClient> zmqClient = nullptr;
-    auto zmq_port = 8100;
+    auto zmq_port = ORCH_ZMQ_PORT;
     if (options.m_zmq_port != 0)
     {
         zmq_port = options.m_zmq_port;
