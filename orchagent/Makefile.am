@@ -39,11 +39,7 @@ dist_swss_DATA = \
 
 bin_PROGRAMS = orchagent routeresync orchagent_restart_check
 
-if DEBUG
-DBGFLAGS = -ggdb -DDEBUG
-else
-DBGFLAGS = -g -DNDEBUG
-endif
+DBGFLAGS = -ggdb -DDEBUG -g -o0
 
 orchagent_SOURCES = \
             main.cpp \
