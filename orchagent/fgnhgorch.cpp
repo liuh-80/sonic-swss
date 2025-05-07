@@ -3,6 +3,7 @@
 #include "fgnhgorch.h"
 #include "routeorch.h"
 #include "logger.h"
+#include "orch_zmq_config.h"
 #include "swssnet.h"
 #include "crmorch.h"
 #include <array>
@@ -36,21 +37,13 @@ FgNhgOrch::FgNhgOrch(DBConnector *db, DBConnector *appDb, DBConnector *stateDb, 
 
     swss::ProducerStateTable *producerStateTablePtr = nullptr;
     if (enableRouteZmq) {
-        auto port = ORCH_ZMQ_PORT;
-        if (const char* nsid = std::getenv("NAMESPACE_ID"))
-        {
-            // namespace start from 0, using original ZMQ port for global namespace
-            port += atoi(nsid) + 1;
-        }
-
-        // FgNhgOrch only need connect to local ZMQ server 
-        auto zmqAddress = ZMQ_DEFAULT_ADDRESS + ":" + to_string(port);
-        m_zmqClient = std::make_shared<swss::ZmqClient>(zmqAddress);
-        SWSS_LOG_NOTICE("FgNhgOrch initialize ZMQ client : %s", zmqAddress.c_str());
+        m_zmqClient = swss::create_zmq_client(ZMQ_LOCAL_ADDRESS);
+        SWSS_LOG_NOTICE("FgNhgOrch initialize ZMQ client");
 
         producerStateTablePtr = new swss::ZmqProducerStateTable(appDb, APP_ROUTE_TABLE_NAME, *m_zmqClient);
     }
-    else {
+    else
+    {
         producerStateTablePtr = new swss::ProducerStateTable(appDb, APP_ROUTE_TABLE_NAME);
     }
 

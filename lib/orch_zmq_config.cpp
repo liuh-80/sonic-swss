@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "dbconnector.h"
 #include "orch_zmq_config.h"
 
 #define ZMQ_TABLE_CONFIGFILE       "/etc/swss/orch_zmq_tables.conf"
@@ -34,4 +35,17 @@ std::shared_ptr<swss::ZmqClient> swss::create_zmq_client(std::string zmq_address
     }
 
     return std::make_shared<ZmqClient>(zmq_address + ":" + std::to_string(zmq_port));
+}
+
+
+bool swss::orch_zmq_enabled()
+{
+    swss::DBConnector config_db("CONFIG_DB", 0);
+    auto enabled = config_db.hget("DEVICE_METADATA|localhost", "orch_route_zmq_enabled");
+    if (enabled && *enabled == "true")
+    {
+        return true;
+    }
+
+    return false;
 }
