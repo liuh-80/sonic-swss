@@ -106,6 +106,12 @@ void sighup_handler(int signo)
     Recorder::Instance().respub.setRotate(true);
 }
 
+void sigwinch_handler(int signo)
+{
+    // for debug
+    exit(0);
+}
+
 void syncd_apply_view()
 {
     SWSS_LOG_NOTICE("Notify syncd APPLY_VIEW");
@@ -333,6 +339,12 @@ int main(int argc, char **argv)
     if (signal(SIGHUP, sighup_handler) == SIG_ERR)
     {
         SWSS_LOG_ERROR("failed to setup SIGHUP action");
+        exit(1);
+    }
+
+    if (signal(SIGWINCH, sigwinch_handler) == SIG_ERR)
+    {
+        SWSS_LOG_ERROR("failed to setup SIGWINCH action");
         exit(1);
     }
 

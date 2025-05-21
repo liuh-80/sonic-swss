@@ -467,6 +467,7 @@ private:
     ReturnCode setPortLinkEventDampingAiedConfig(Port &port,
                                                  sai_redis_link_event_damping_algo_aied_config_t &config);
 
+    bool isSingleMemberLagPort(Port &port);
     void updatePortOperStatus(Port &port, sai_port_oper_status_t status);
 
     bool getPortOperSpeed(const Port& port, sai_uint32_t& speed) const;
