@@ -37,7 +37,7 @@ dist_swss_DATA = \
 		 tunnel_rates.lua \
 		 trap_rates.lua
 
-bin_PROGRAMS = orchagent orchagentp routeresync orchagent_restart_check
+bin_PROGRAMS = orchagent routeresync orchagent_restart_check #orchagentp
 
 if DEBUG
 DBGFLAGS = -ggdb -DDEBUG
@@ -45,7 +45,6 @@ else
 DBGFLAGS = -g -DNDEBUG
 endif
 
-orchagentp_SOURCES
 orchagent_SOURCES = \
             main.cpp \
             $(top_srcdir)/lib/gearboxutils.cpp \
@@ -143,10 +142,10 @@ orchagent_CFLAGS = $(DBGFLAGS) $(AM_CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFL
 orchagent_CPPFLAGS = $(DBGFLAGS) $(AM_CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFLAGS_ASAN)
 orchagent_LDADD = $(LDFLAGS_ASAN) -lnl-3 -lnl-route-3 -lpthread -lsairedis -lsaimeta -lsaimetadata -lswsscommon -lzmq -lprotobuf -ldashapi -ljemalloc
 
-orchagentp_SOURCES = $(orchagent_SOURCES)
-orchagentp_CFLAGS = $(orchagent_CFLAGS) -pg
-orchagentp_CPPFLAGS = $(orchagent_CPPFLAGS) -pg
-orchagentp_LDADD = $(orchagent_LDADD) -pg
+#orchagentp_SOURCES = $(orchagent_SOURCES)
+#orchagentp_CFLAGS = $(orchagent_CFLAGS) -pg
+#orchagentp_CPPFLAGS = $(orchagent_CPPFLAGS) -pg
+#orchagentp_LDADD = $(orchagent_LDADD) -pg
 
 routeresync_SOURCES = routeresync.cpp
 routeresync_CFLAGS = $(DBGFLAGS) $(AM_CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_ASAN)
@@ -165,7 +164,7 @@ endif
 
 if ASAN_ENABLED
 orchagent_SOURCES += $(top_srcdir)/lib/asan.cpp
-orchagenp_SOURCES += $(top_srcdir)/lib/asan.cpp
+#orchagentp_SOURCES += $(top_srcdir)/lib/asan.cpp
 routeresync_SOURCES += $(top_srcdir)/lib/asan.cpp
 orchagent_restart_check_SOURCES += $(top_srcdir)/lib/asan.cpp
 endif
