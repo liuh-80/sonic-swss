@@ -238,7 +238,7 @@ orchagent_LDADD = $(LDFLAGS_ASAN) -lnl-3 -lnl-route-3 -lpthread -lsairedis -lsai
 
 orchagent_gprof_CFLAGS = $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFLAGS_ASAN) -pg
 orchagent_gprof_CPPFLAGS = $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFLAGS_ASAN) -pg
-orchagent_gprof_LDADD = $(LDFLAGS_ASAN) -pg -lnl-3 -lnl-route-3 -lpthread -lsairedis -lsaimeta -lsaimetadata -lswsscommon -lzmq -lprotobuf -ldashapi -ljemalloc
+orchagent_gprof_LDFLAGS = $(LDFLAGS_ASAN) -pg -lnl-3 -lnl-route-3 -lpthread -lsairedis -lsaimeta -lsaimetadata -lswsscommon -lzmq -lprotobuf -ldashapi -ljemalloc
 
 routeresync_SOURCES = routeresync.cpp
 routeresync_CFLAGS = $(DBGFLAGS) $(AM_CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_ASAN)
