@@ -345,7 +345,7 @@ int main(int argc, char **argv)
     if (signal(SIGWINCH, sigwinch_handler) == SIG_ERR)
     {
         SWSS_LOG_ERROR("failed to setup SIGWINCH action");
-        exit(1);
+        exit(0);
     }
 
     int opt;

@@ -8,6 +8,9 @@ INCLUDES = -I $(top_srcdir)/lib \
            -I pbh \
            -I nhg
 
+CFLAGS = -g
+CXXFLAGS = -g
+
 if GCOV_ENABLED
 SUBDIRS = p4orch/tests
 endif
@@ -233,9 +236,9 @@ orchagent_CFLAGS = $(DBGFLAGS) $(AM_CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFL
 orchagent_CPPFLAGS = $(DBGFLAGS) $(AM_CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFLAGS_ASAN)
 orchagent_LDADD = $(LDFLAGS_ASAN) -lnl-3 -lnl-route-3 -lpthread -lsairedis -lsaimeta -lsaimetadata -lswsscommon -lzmq -lprotobuf -ldashapi -ljemalloc
 
-orchagent_gprof_CFLAGS = $(DBGFLAGS) $(AM_CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFLAGS_ASAN) -pg
-orchagent_gprof_CPPFLAGS = $(DBGFLAGS) $(AM_CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFLAGS_ASAN)-pg
-orchagent_gprof_LDADD = $(LDFLAGS_ASAN) -lnl-3 -lnl-route-3 -lpthread -lsairedis -lsaimeta -lsaimetadata -lswsscommon -lzmq -lprotobuf -ldashapi -ljemalloc
+orchagent_gprof_CFLAGS = $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFLAGS_ASAN) -pg
+orchagent_gprof_CPPFLAGS = $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFLAGS_ASAN) -pg
+orchagent_gprof_LDADD = $(LDFLAGS_ASAN) -pg -lnl-3 -lnl-route-3 -lpthread -lsairedis -lsaimeta -lsaimetadata -lswsscommon -lzmq -lprotobuf -ldashapi -ljemalloc
 
 routeresync_SOURCES = routeresync.cpp
 routeresync_CFLAGS = $(DBGFLAGS) $(AM_CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_ASAN)
