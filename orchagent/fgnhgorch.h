@@ -11,6 +11,8 @@
 #include "ipaddresses.h"
 #include "ipprefix.h"
 #include "nexthopgroupkey.h"
+#include "zmqclient.h"
+#include "zmqproducerstatetable.h"
 
 #include <map>
 
@@ -98,7 +100,7 @@ typedef map<string, NextHopIndexMap> WarmBootRecoveryMap;
 class FgNhgOrch : public Orch, public Observer
 {
 public:
-    FgNhgOrch(DBConnector *db, DBConnector *appDb, DBConnector *stateDb, vector<table_name_with_pri_t> &tableNames, NeighOrch *neighOrch, IntfsOrch *intfsOrch, VRFOrch *vrfOrch);
+    FgNhgOrch(DBConnector *db, DBConnector *appDb, DBConnector *stateDb, vector<table_name_with_pri_t> &tableNames, NeighOrch *neighOrch, IntfsOrch *intfsOrch, VRFOrch *vrfOrch, swss::ZmqServer *zmqServer = nullptr);
 
     void update(SubjectType type, void *cntx);
     bool isRouteFineGrained(sai_object_id_t vrf_id, const IpPrefix &ipPrefix, const NextHopGroupKey &nextHops);
@@ -123,7 +125,11 @@ private:
     bool isFineGrainedConfigured;
 
     Table m_stateWarmRestartRouteTable;
-    ProducerStateTable m_routeTable;
+    std::shared_ptr<ZmqClient> m_zmqClient = nullptr;
+
+    /* regular route table */
+    std::shared_ptr<ProducerStateTable> m_routeTable = nullptr;
+
 
     FgPrefixOpCache m_fgPrefixAddCache;
     FgPrefixOpCache m_fgPrefixDelCache;
