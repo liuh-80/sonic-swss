@@ -5,6 +5,9 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include "zmqclient.h"
+#include "zmqserver.h"
+#include "zmqproducerstatetable.h"
 
 #include "logger.h"
 #include "dbconnector.h"
@@ -43,8 +46,21 @@ bool write_db_data(vector<KeyOpFieldsValuesTuple> &db_items)
 {
     DBConnector db("APPL_DB", 0, false);
     RedisPipeline pipeline(&db); // dtor of RedisPipeline will automatically flush data
-    unordered_map<string, ProducerStateTable> table_map;
-    
+    unordered_map<string, ProducerStateTable*> table_map;
+
+    // [Hua] test code, need improve to a parameter
+    int zmq_port = ORCH_ZMQ_PORT;
+    if (const char* nsid = std::getenv("NAMESPACE_ID"))
+    {
+        // namespace start from 0, using original ZMQ port for global namespace
+        zmq_port += atoi(nsid) + 1;
+    }
+
+    char address[100];
+    snprintf(address, sizeof(address), "tcp://localhost:%d", zmq_port);
+    ZmqClient zmqClient(address);
+    SWSS_LOG_WARN("[Hua] write_db_data start.");
+
     for (auto &db_item : db_items)
     {
         dump_db_item(db_item);
@@ -58,12 +74,29 @@ bool write_db_data(vector<KeyOpFieldsValuesTuple> &db_items)
         }
         string table_name = key.substr(0, pos);
         string key_name = key.substr(pos + 1);
-        auto ret = table_map.emplace(std::piecewise_construct, std::forward_as_tuple(table_name), std::forward_as_tuple(&pipeline, table_name, true));
+
+        auto findResult = table_map.find(table_name);
+        ProducerStateTable* p_table= nullptr;
+        if (findResult == table_map.end())
+        {
+            if (table_name == APP_ROUTE_TABLE_NAME) {
+                p_table = new ZmqProducerStateTable(&pipeline, table_name, zmqClient, true);
+            }
+            else {
+                p_table = new ProducerStateTable(&pipeline, table_name, true);
+            }
+
+            table_map.emplace(table_name, p_table);
+        }
+        else
+        {
+            p_table = findResult->second;
+        }
 
         if (kfvOp(db_item) == SET_COMMAND)
-            ret.first->second.set(key_name, kfvFieldsValues(db_item), SET_COMMAND);
+            p_table->set(key_name, kfvFieldsValues(db_item), SET_COMMAND);
         else if (kfvOp(db_item) == DEL_COMMAND)
-            ret.first->second.del(key_name, DEL_COMMAND);
+            p_table->del(key_name, DEL_COMMAND);
         else
         {
             SWSS_LOG_ERROR("Invalid operation: %s\n", kfvOp(db_item).c_str());
@@ -71,6 +104,13 @@ bool write_db_data(vector<KeyOpFieldsValuesTuple> &db_items)
         }
     }
 
+    SWSS_LOG_WARN("[Hua] write_db_data end.");
+    // [Hua] test code, need improve to a parameter
+    // release tables
+    for (const auto& table_item : table_map)
+    {
+        delete table_item.second;
+    }
     return true;
 }
 
