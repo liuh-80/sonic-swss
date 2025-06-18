@@ -7,6 +7,7 @@
 #include <sairedis.h>
 #include "warm_restart.h"
 #include <iostream>
+#include "orch_zmq_config.h"
 
 #define SAI_SWITCH_ATTR_CUSTOM_RANGE_BASE SAI_SWITCH_ATTR_CUSTOM_RANGE_START
 #include "sairedis.h"
@@ -262,11 +263,19 @@ bool OrchDaemon::init()
     NvgreTunnelMapOrch *nvgre_tunnel_map_orch = new NvgreTunnelMapOrch(m_configDb, CFG_NVGRE_TUNNEL_MAP_TABLE_NAME);
     gDirectory.set(nvgre_tunnel_map_orch);
 
+    // Enable the gNMI service to send DASH events to orchagent via the ZMQ channel.
+    ZmqServer *dash_zmq_server = nullptr;
+    if (get_feature_status(ORCH_NORTHBOND_DASH_ZMQ_ENABLED, true))
+    {
+        SWSS_LOG_NOTICE("Enable the gNMI service to send DASH events to orchagent via the ZMQ channel.");
+        dash_zmq_server = m_zmqServer;
+    }
+
 	vector<string> dash_vnet_tables = {
         APP_DASH_VNET_TABLE_NAME,
         APP_DASH_VNET_MAPPING_TABLE_NAME
     };
-    DashVnetOrch *dash_vnet_orch = new DashVnetOrch(m_applDb, dash_vnet_tables, m_zmqServer);
+    DashVnetOrch *dash_vnet_orch = new DashVnetOrch(m_applDb, dash_vnet_tables, dash_zmq_server);
     gDirectory.set(dash_vnet_orch);
 
     vector<string> dash_tables = {
@@ -277,7 +286,7 @@ bool OrchDaemon::init()
         APP_DASH_QOS_TABLE_NAME
     };
 
-    DashOrch *dash_orch = new DashOrch(m_applDb, dash_tables, m_zmqServer);
+    DashOrch *dash_orch = new DashOrch(m_applDb, dash_tables, dash_zmq_server);
     gDirectory.set(dash_orch);
 
     vector<string> dash_route_tables = {
@@ -286,7 +295,7 @@ bool OrchDaemon::init()
         APP_DASH_ROUTE_GROUP_TABLE_NAME
     };
 
-    DashRouteOrch *dash_route_orch = new DashRouteOrch(m_applDb, dash_route_tables, dash_orch, m_zmqServer);
+    DashRouteOrch *dash_route_orch = new DashRouteOrch(m_applDb, dash_route_tables, dash_orch, dash_zmq_server);
     gDirectory.set(dash_route_orch);
 
     vector<string> dash_acl_tables = {
@@ -296,7 +305,7 @@ bool OrchDaemon::init()
         APP_DASH_ACL_GROUP_TABLE_NAME,
         APP_DASH_ACL_RULE_TABLE_NAME
     };
-    DashAclOrch *dash_acl_orch = new DashAclOrch(m_applDb, dash_acl_tables, dash_orch, m_zmqServer);
+    DashAclOrch *dash_acl_orch = new DashAclOrch(m_applDb, dash_acl_tables, dash_orch, dash_zmq_server);
     gDirectory.set(dash_acl_orch);
 
     vector<string> qos_tables = {
