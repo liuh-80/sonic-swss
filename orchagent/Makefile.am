@@ -41,11 +41,7 @@ dist_swss_DATA = \
 		 trap_rates.lua
 
 bin_PROGRAMS = orchagent routeresync orchagent_restart_check orchagent_gprof
-if DEBUG
 DBGFLAGS = -ggdb -DDEBUG
-else
-DBGFLAGS = -g -DNDEBUG
-endif
 
 orchagent_SOURCES = \
             main.cpp \
@@ -236,9 +232,9 @@ orchagent_CFLAGS = $(DBGFLAGS) $(AM_CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFL
 orchagent_CPPFLAGS = $(DBGFLAGS) $(AM_CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFLAGS_ASAN)
 orchagent_LDADD = $(LDFLAGS_ASAN) -lnl-3 -lnl-route-3 -lpthread -lsairedis -lsaimeta -lsaimetadata -lswsscommon -lzmq -lprotobuf -ldashapi -ljemalloc
 
-orchagent_gprof_CFLAGS = $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFLAGS_ASAN) -pg
-orchagent_gprof_CPPFLAGS = $(CFLAGS_COMMON) $(CFLAGS_SAI) $(CFLAGS_ASAN) -pg
-orchagent_gprof_LDFLAGS = $(LDFLAGS_ASAN) -pg -lnl-3 -lnl-route-3 -lpthread -lsairedis -lsaimeta -lsaimetadata -lswsscommon -lzmq -lprotobuf -ldashapi -ljemalloc
+orchagent_gprof_CFLAGS =  -g -DNDEBUG -std=c++14  -I/usr/include/swss -I/usr/include/libnl3  -I /usr/include/sai  -pg
+orchagent_gprof_CPPFLAGS =  -g -DNDEBUG -std=c++14  -I/usr/include/swss -I/usr/include/libnl3  -I /usr/include/sai  -pg
+orchagent_gprof_LDFLAGS = -pg -lnl-3 -lnl-route-3 -lpthread -lsairedis -lsaimeta -lsaimetadata -lswsscommon -lzmq -lprotobuf -ldashapi -ljemalloc
 
 routeresync_SOURCES = routeresync.cpp
 routeresync_CFLAGS = $(DBGFLAGS) $(AM_CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_ASAN)
