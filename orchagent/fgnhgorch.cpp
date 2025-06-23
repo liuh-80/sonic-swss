@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <inttypes.h>
 #include "fgnhgorch.h"
+#include "orch_zmq_config.h"
 #include "routeorch.h"
 #include "logger.h"
 #include "swssnet.h"
@@ -23,11 +24,12 @@ extern PortsOrch *gPortsOrch;
 
 FgNhgOrch::FgNhgOrch(DBConnector *db, DBConnector *appDb, DBConnector *stateDb, vector<table_name_with_pri_t> &tableNames, NeighOrch *neighOrch, IntfsOrch *intfsOrch, VRFOrch *vrfOrch) :
         Orch(db, tableNames),
+        m_zmqClient(create_local_zmq_client(ORCH_NORTHBOND_ROUTE_ZMQ_ENABLED, false)),
         m_neighOrch(neighOrch),
         m_intfsOrch(intfsOrch),
         m_vrfOrch(vrfOrch),
         m_stateWarmRestartRouteTable(stateDb, STATE_FG_ROUTE_TABLE_NAME),
-        m_routeTable(appDb, APP_ROUTE_TABLE_NAME)
+        m_routeTable(createProducerStateTable(appDb, APP_ROUTE_TABLE_NAME, m_zmqClient))
 {
     SWSS_LOG_ENTER();
     isFineGrainedConfigured = false;
@@ -1663,7 +1665,7 @@ bool FgNhgOrch::doTaskFgNhgPrefix(const KeyOpFieldsValuesTuple & t)
             {
                 SWSS_LOG_INFO("Route exists in routeorch, deleting from APP_DB to begin migration");
                 m_fgPrefixAddCache[ip_prefix] = nhg;
-                m_routeTable.del(ip_prefix.to_string());
+                m_routeTable->del(ip_prefix.to_string());
                 return false;
             }
         }
@@ -1675,7 +1677,7 @@ bool FgNhgOrch::doTaskFgNhgPrefix(const KeyOpFieldsValuesTuple & t)
                 SWSS_LOG_INFO("Route removed in routeorch, now do an APP_DB addition");
                 fgNhg_entry->second.prefixes.push_back(ip_prefix);
                 m_fgNhgPrefixes[ip_prefix] = &(fgNhg_entry->second);
-                m_routeTable.set(ip_prefix.to_string(), generateRouteTableFromNhgKey(addCache->second));
+                m_routeTable->set(ip_prefix.to_string(), generateRouteTableFromNhgKey(addCache->second));
                 m_fgPrefixAddCache.erase(addCache);
                 SWSS_LOG_INFO("Performed APP_DB addition with prefix %s", ip_prefix.to_string().c_str());
             }
@@ -1726,7 +1728,7 @@ bool FgNhgOrch::doTaskFgNhgPrefix(const KeyOpFieldsValuesTuple & t)
             {
                 SWSS_LOG_INFO("Route exists in fgNhgOrch, deleting from APP_DB");
                 m_fgPrefixDelCache[ip_prefix] = nhg;
-                m_routeTable.del(ip_prefix.to_string());
+                m_routeTable->del(ip_prefix.to_string());
                 return false;
             }
         }
@@ -1746,7 +1748,7 @@ bool FgNhgOrch::doTaskFgNhgPrefix(const KeyOpFieldsValuesTuple & t)
                 }
                 m_fgNhgPrefixes.erase(ip_prefix); 
 
-                m_routeTable.set(ip_prefix.to_string(), generateRouteTableFromNhgKey(delCache->second));
+                m_routeTable->set(ip_prefix.to_string(), generateRouteTableFromNhgKey(delCache->second));
                 SWSS_LOG_INFO("Perform APP_DB addition with prefix %s", ip_prefix.to_string().c_str());
             }
             else
