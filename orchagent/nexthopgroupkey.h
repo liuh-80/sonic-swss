@@ -226,10 +226,30 @@ public:
         m_nexthops.clear();
     }
 
+    // Support std::unordered_map
+    template <typename T>
+    friend class std::hash; 
+    
 private:
     std::set<NextHopKey> m_nexthops;
     bool m_overlay_nexthops;
     bool m_srv6_nexthops;
 };
+
+namespace std {
+    template <>
+    struct hash<NextHopGroupKey> {
+        size_t operator()(const NextHopGroupKey& obj) const {
+            size_t nhg_hash = 0;
+
+            for (auto it = obj.m_nexthops.begin(); it != obj.m_nexthops.end(); ++it)
+            {
+                nhg_hash ^= (std::hash<NextHopKey>{}(*it) << 1);
+            }
+
+            return nhg_hash;
+        }
+    };
+}
 
 #endif /* SWSS_NEXTHOPGROUPKEY_H */

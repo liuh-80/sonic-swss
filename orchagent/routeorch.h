@@ -16,6 +16,7 @@
 #include "bulker.h"
 #include "fgnhgorch.h"
 #include <map>
+#include <unordered_map>
 #include "zmqorch.h"
 #include "zmqserver.h"
 
@@ -95,7 +96,7 @@ struct RouteKey
 };
 
 /* NextHopGroupTable: NextHopGroupKey, NextHopGroupEntry */
-typedef std::map<NextHopGroupKey, NextHopGroupEntry> NextHopGroupTable;
+typedef std::unordered_map<NextHopGroupKey, NextHopGroupEntry> NextHopGroupTable;
 /* RouteTable: destination network, NextHopGroupKey */
 typedef std::map<IpPrefix, RouteNhg> RouteTable;
 /* RouteTables: vrf_id, RouteTable */
