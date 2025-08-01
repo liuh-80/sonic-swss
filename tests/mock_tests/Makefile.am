@@ -62,13 +62,10 @@ tests_SOURCES = aclorch_ut.cpp \
                 neighorch_ut.cpp \
                 twamporch_ut.cpp \
                 flexcounter_ut.cpp \
-<<<<<<< HEAD
-=======
                 mock_orch_test.cpp \
                 mock_dash_orch_test.cpp \
                 zmq_orch_ut.cpp \
                 mock_saihelper.cpp \
->>>>>>> bc2f1747 (Orchagent changes to enable zmq mode with syncd for DPUs (#3547))
                 $(top_srcdir)/warmrestart/warmRestartHelper.cpp \
                 $(top_srcdir)/lib/gearboxutils.cpp \
                 $(top_srcdir)/lib/subintf.cpp \
