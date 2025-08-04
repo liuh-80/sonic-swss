@@ -343,7 +343,15 @@ int main(int argc, char **argv)
     string record_location = Recorder::DEFAULT_DIR;
     string swss_rec_filename = Recorder::SWSS_FNAME;
     string sairedis_rec_filename = Recorder::SAIREDIS_FNAME;
-    string zmq_server_address = "tcp://127.0.0.1:" + to_string(ORCH_ZMQ_PORT);
+
+    int zmq_port = ORCH_ZMQ_PORT;
+    if (const char* nsid = std::getenv("NAMESPACE_ID"))
+    {
+        // namespace start from 0, using original ZMQ port for global namespace
+        zmq_port += atoi(nsid) + 1;
+    }
+
+    string zmq_server_address = "tcp://localhost:" + to_string(zmq_port);
     bool   enable_zmq = false;
     string responsepublisher_rec_filename = Recorder::RESPPUB_FNAME;
     int record_type = 3; // Only swss and sairedis recordings enabled by default.
@@ -435,7 +443,7 @@ int main(int argc, char **argv)
         case 'q':
             if (optarg)
             {
-                zmq_server_address = optarg;
+                zmq_server_address = string(optarg) + ":" + to_string(zmq_port);
                 enable_zmq = true;
             }
             break;
@@ -525,21 +533,6 @@ int main(int argc, char **argv)
         memcpy(attr.value.mac, gMacAddress.getMac(), 6);
         attrs.push_back(attr);
     }
-
-    // SAI_REDIS_SWITCH_ATTR_SYNC_MODE attribute only setBuffer and g_syncMode to true
-    // since it is not using ASIC_DB, we can execute it before create_switch
-    // when g_syncMode is set to true here, create_switch will wait the response from syncd
-    if (gSyncMode)
-    {
-        SWSS_LOG_WARN("sync mode is depreacated, use -z param");
-
-        gRedisCommunicationMode = SAI_REDIS_COMMUNICATION_MODE_REDIS_SYNC;
-    }
-
-    attr.id = SAI_REDIS_SWITCH_ATTR_REDIS_COMMUNICATION_MODE;
-    attr.value.s32 = gRedisCommunicationMode;
-
-    sai_switch_api->set_switch_attribute(gSwitchId, &attr);
 
     if (!gAsicInstance.empty())
     {

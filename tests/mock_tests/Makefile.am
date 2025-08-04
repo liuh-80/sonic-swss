@@ -62,6 +62,7 @@ tests_SOURCES = aclorch_ut.cpp \
                 neighorch_ut.cpp \
                 twamporch_ut.cpp \
                 flexcounter_ut.cpp \
+                mock_saihelper.cpp \
                 $(top_srcdir)/warmrestart/warmRestartHelper.cpp \
                 $(top_srcdir)/lib/gearboxutils.cpp \
                 $(top_srcdir)/lib/subintf.cpp \
