@@ -883,6 +883,8 @@ void OrchDaemon::start(long heartBeatInterval)
 
     auto tstart = std::chrono::high_resolution_clock::now();
 
+    gRouteOrch->m_bulkCreateRouteTest = false;
+
     while (true)
     {
         Selectable *s;
@@ -996,6 +998,13 @@ void OrchDaemon::start(long heartBeatInterval)
                     freezeAndHeartBeat(UINT_MAX, heartBeatInterval);
                 }
             }
+        }
+
+        SWSS_LOG_ERROR("[Hua] OrchDaemon check m_bulkCreateRouteTest\n");
+        if (gRouteOrch->m_bulkCreateRouteTest)
+        {
+            SWSS_LOG_ERROR("[Hua] OrchDaemon triggered m_bulkCreateRouteTest\n");
+            gRouteOrch->bulkCreateRouteTest();
         }
     }
 }

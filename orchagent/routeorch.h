@@ -259,6 +259,8 @@ public:
     bool checkNextHopGroupCount();
     const RouteTables& getSyncdRoutes() const { return m_syncdRoutes; }
 
+    void bulkCreateRouteTest();
+    bool m_bulkCreateRouteTest;
 private:
     SwitchOrch *m_switchOrch;
     NeighOrch *m_neighOrch;
@@ -322,6 +324,13 @@ private:
     void updateDefaultRouteSwapSet(const NextHopGroupKey default_nhg_key, std::set<NextHopKey>& active_default_route_nhops);
     void incNhgRefCount(const std::string& nhg_index, const std::string &context_index = "");
     void decNhgRefCount(const std::string& nhg_index, const std::string &context_index = "");
+};
+
+struct BulkRouteCreateTest
+{
+    std::vector<sai_status_t> object_statuses;
+    std::vector<sai_route_entry_t> route_entries;
+    std::vector<vector<_sai_attribute_t>> route_attrs_vector;
 };
 
 #endif /* SWSS_ROUTEORCH_H */

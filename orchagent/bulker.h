@@ -669,7 +669,8 @@ public:
                     tss.push_back(attrs.data());
                     cs.push_back((uint32_t)attrs.size());
 
-                    if (rs.size() >= max_bulk_size)
+                    //if (rs.size() >= max_bulk_size)
+                    if (rs.size() >= 50000)
                     {
                         flush_creating_entries(rs, tss, cs);
                     }
@@ -822,6 +823,7 @@ private:
         }
         size_t count = rs.size();
         std::vector<sai_status_t> statuses(count);
+        SWSS_LOG_ERROR("[Hua] bulker flush_creating_entries 1 start: %zu\n", count);
         sai_status_t status = (*create_entries)((uint32_t)count, rs.data(), cs.data(), tss.data()
             , SAI_BULK_OP_ERROR_MODE_IGNORE_ERROR, statuses.data());
         if (status == SAI_STATUS_SUCCESS)
@@ -1096,7 +1098,8 @@ public:
                     tss.push_back(attrs.data());
                     cs.push_back((uint32_t)attrs.size());
 
-                    if (rs.size() >= max_bulk_size)
+                    //if (rs.size() >= max_bulk_size)
+                    if (rs.size() >= 50000)
                     {
                         flush_creating_entries(rs, tss, cs);
                     }
@@ -1248,11 +1251,12 @@ private:
         size_t count = rs.size();
         std::vector<sai_object_id_t> object_ids(count);
         std::vector<sai_status_t> statuses(count);
+        SWSS_LOG_ERROR("[Hua] bulker flush_creating_entries 2 start: %zu\n", count);
         sai_status_t status = (*create_entries)(switch_id, (uint32_t)count, cs.data(), tss.data()
             , SAI_BULK_OP_ERROR_MODE_STOP_ON_ERROR, object_ids.data(), statuses.data());
         if (status == SAI_STATUS_SUCCESS)
         {
-            SWSS_LOG_INFO("ObjectBulker.flush creating_entries %zu\n", count);
+            SWSS_LOG_ERROR("ObjectBulker.flush creating_entries %zu\n", count);
         }
         else
         {

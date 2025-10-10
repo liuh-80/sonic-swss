@@ -14,6 +14,8 @@
 #include "crmorch.h"
 #include "directory.h"
 
+#include <chrono>
+
 extern sai_object_id_t gVirtualRouterId;
 extern sai_object_id_t gSwitchId;
 
@@ -37,6 +39,7 @@ extern string gMySwitchType;
 #define DEFAULT_NUMBER_OF_ECMP_GROUPS   128
 #define DEFAULT_MAX_ECMP_GROUP_SIZE     32
 
+
 RouteOrch::RouteOrch(DBConnector *db, vector<table_name_with_pri_t> &tableNames, SwitchOrch *switchOrch, NeighOrch *neighOrch, IntfsOrch *intfsOrch, VRFOrch *vrfOrch, FgNhgOrch *fgNhgOrch, Srv6Orch *srv6Orch, swss::ZmqServer *zmqServer) :
         gRouteBulker(sai_route_api, gMaxBulkSize),
         gLabelRouteBulker(sai_mpls_api, gMaxBulkSize),
@@ -50,7 +53,8 @@ RouteOrch::RouteOrch(DBConnector *db, vector<table_name_with_pri_t> &tableNames,
         m_nextHopGroupCount(0),
         m_srv6Orch(srv6Orch),
         m_resync(false),
-        m_appTunnelDecapTermProducer(db, APP_TUNNEL_DECAP_TERM_TABLE_NAME)
+        m_appTunnelDecapTermProducer(db, APP_TUNNEL_DECAP_TERM_TABLE_NAME),
+        m_bulkCreateRouteTest(false)
 {
     SWSS_LOG_ENTER();
 
@@ -616,6 +620,9 @@ void RouteOrch::doTask(ConsumerBase& consumer)
         return;
     }
 
+    auto route_task_start = std::chrono::high_resolution_clock::now();
+    int route_count = 0;
+
     /* Default handling is for APP_ROUTE_TABLE_NAME */
     auto it = consumer.m_toSync.begin();
     while (it != consumer.m_toSync.end())
@@ -632,6 +639,7 @@ void RouteOrch::doTask(ConsumerBase& consumer)
         // Add or remove routes with a route bulker
         while (it != consumer.m_toSync.end())
         {
+            route_count++;
             KeyOpFieldsValuesTuple t = it->second;
 
             string key = kfvKey(t);
@@ -1103,7 +1111,10 @@ void RouteOrch::doTask(ConsumerBase& consumer)
         }
 
         // Flush the route bulker, so routes will be written to syncd and ASIC
+        auto route_task_bulk_start = std::chrono::high_resolution_clock::now();
         gRouteBulker.flush();
+        auto route_task_bulk_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - route_task_bulk_start);
+        SWSS_LOG_NOTICE("route_task_bulk_duration route: %d in ms: %ld\n", route_count, route_task_bulk_duration.count());
 
         // Go through the bulker results
         auto it_prev = consumer.m_toSync.begin();
@@ -1223,6 +1234,8 @@ void RouteOrch::doTask(ConsumerBase& consumer)
         /* No Update to Default Route so we can return */
         if (!(v4_default_nhg_key.getSize()) && !(v6_default_nhg_key.getSize()))
         {
+            auto route_task_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - route_task_start);
+            SWSS_LOG_NOTICE("route_task_duration (1) route: %d in ms: %ld\n", route_count, route_task_duration.count());
             return;
         }
 	/* Update to v4 Default Route so update the data structure */
@@ -1236,6 +1249,9 @@ void RouteOrch::doTask(ConsumerBase& consumer)
             updateDefaultRouteSwapSet(v6_default_nhg_key, v6_active_default_route_nhops);
         }
     }
+
+    auto route_task_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - route_task_start);
+    SWSS_LOG_NOTICE("route_task_duration (2) route: %d in ms: %ld\n", route_count, route_task_duration.count());
 }
 
 void RouteOrch::notifyNextHopChangeObservers(sai_object_id_t vrf_id, const IpPrefix &prefix, const NextHopGroupKey &nexthops, bool add)
@@ -3213,4 +3229,75 @@ inline void RouteOrch::removeVipRouteSubnetDecapTerm(const IpPrefix &ipPrefix)
     string key = tunnel_name + ":" + ipPrefix.to_string();
     m_appTunnelDecapTermProducer.del(key);
     m_SubnetDecapTermsCreated.erase(it);
+}
+
+void RouteOrch::bulkCreateRouteTest()
+{
+    m_bulkCreateRouteTest = false;
+
+    int bulk_size = 10000;
+    int bulk_count = 10;
+    int total_count = bulk_count * bulk_size;
+
+    sai_object_id_t next_hop_id = SAI_NULL_OBJECT_ID;//m_syncdNextHopGroups.begin()->second.next_hop_group_id;
+
+    std::vector<BulkRouteCreateTest> bulkCreateData(bulk_count);
+    for (int bulk_idx = 0; bulk_idx < bulk_count; bulk_idx++)
+    {
+        auto &bulk_data = bulkCreateData[bulk_idx];
+        for (int obj_idx = 0; obj_idx < bulk_size; obj_idx++)
+        {
+            sai_status_t tmp_status = SAI_STATUS_SUCCESS;
+            bulk_data.object_statuses.push_back(tmp_status);
+
+            sai_route_entry_t route_entry;
+            route_entry.vr_id = gVirtualRouterId;
+            route_entry.switch_id = gSwitchId;
+
+            // create xx.xx.xx.0/24 route
+            int object_index_in_all_bulks = bulk_idx * bulk_size + obj_idx;
+            int ipv4_first = object_index_in_all_bulks % 255;
+            int ipv4_second = ((object_index_in_all_bulks - ipv4_first)/255) % 255;
+            int ipv4_third = ((((object_index_in_all_bulks - ipv4_first)/255) - ipv4_second)/255) %255 + 100;
+            IpPrefix ipPrefix(std::to_string(ipv4_third) + "." + std::to_string(ipv4_second) + "." + std::to_string(ipv4_first) + ".0/24");
+            copy(route_entry.destination, ipPrefix);
+            bulk_data.route_entries.push_back(route_entry);
+
+            vector<_sai_attribute_t> route_attrs;
+
+            sai_attribute_t route_attr;
+            route_attr.id = SAI_ROUTE_ENTRY_ATTR_NEXT_HOP_ID;
+            route_attr.value.oid = next_hop_id;
+            route_attrs.push_back(route_attr);
+            
+            sai_attribute_t route_attr2;
+            route_attr2.id = SAI_ROUTE_ENTRY_ATTR_PACKET_ACTION;
+            route_attr2.value.oid = SAI_PACKET_ACTION_FORWARD;
+            route_attrs.push_back(route_attr2);
+
+            bulk_data.route_attrs_vector.push_back(route_attrs);
+        }
+    }
+
+    // Flush the route bulker, so routes will be written to syncd and ASIC
+    SWSS_LOG_ERROR("[Hua] bulkCreateRouteTest route: %d start, bulk_count: %d\n", total_count, bulk_count);
+    auto route_task_bulk_start = std::chrono::high_resolution_clock::now();
+    for (int bulk_idx = 0; bulk_idx < bulk_count; bulk_idx++)
+    {
+        auto &bulk_data = bulkCreateData[bulk_idx];
+        SWSS_LOG_ERROR("[Hua] bulkCreateRouteTest create_entry bulk_idx: %d\n", bulk_idx);
+        for (int obj_idx = 0; obj_idx < bulk_size; obj_idx++)
+        {
+            gRouteBulker.create_entry(
+                &bulk_data.object_statuses[obj_idx],
+                &bulk_data.route_entries[obj_idx],
+                (uint32_t)bulk_data.route_attrs_vector[obj_idx].size(),
+                bulk_data.route_attrs_vector[obj_idx].data());
+        }
+
+        gRouteBulker.flush();
+    }
+
+    auto route_task_bulk_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - route_task_bulk_start);
+    SWSS_LOG_ERROR("[Hua] bulkCreateRouteTest route: %d in ms: %ld\n", total_count, route_task_bulk_duration.count());
 }

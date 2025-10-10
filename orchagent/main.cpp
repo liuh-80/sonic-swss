@@ -341,6 +341,16 @@ bool getSystemPortConfigList(DBConnector *cfgDb, DBConnector *appDb, vector<sai_
     return true;
 }
 
+
+extern RouteOrch *gRouteOrch;
+void test_handler(int signo)
+{
+    // trigger bulk create
+    SWSS_LOG_NOTICE("[Hua] Test bulk create route performance");
+    // gRouteOrch->m_bulkCreateRouteTest = true;
+    gRouteOrch->bulkCreateRouteTest();
+}
+
 int main(int argc, char **argv)
 {
     swss::Logger::linkToDbNative("orchagent");
@@ -354,6 +364,11 @@ int main(int argc, char **argv)
     {
         SWSS_LOG_ERROR("failed to setup SIGHUP action");
         exit(1);
+    }
+
+    if (signal(SIGWINCH, test_handler) == SIG_ERR)
+    {
+        SWSS_LOG_ERROR("failed to setup SIGWINCH action");
     }
 
     int opt;
